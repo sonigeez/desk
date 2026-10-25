@@ -71,6 +71,12 @@ go build -o desk . && launchctl kickstart -k gui/$(id -u)/local.desk
 
 On Linux, a systemd service running `./desk` from the project folder does the same job.
 
+## Save from your browser
+
+Open **+ Save → Save from any page with a bookmarklet** in Desk and drag **Save to Desk** to your bookmarks bar. On any page you want to read later, click it: the page goes on top of your stack and Desk shows it being fetched, with a link back to where you were. If you're signed out, Desk asks for your password and then finishes the save.
+
+The bookmarklet holds the address you opened Desk at, so add it from the same address you'll use it with. With `DESK_PASSWORD` set it also carries a key made from the password, so a link from another site can't add to your stack without asking you first. After changing the password, drag a fresh one.
+
 ## Use it from your phone
 
 The simplest private way is [Tailscale](https://tailscale.com):

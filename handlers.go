@@ -135,7 +135,7 @@ func mins(m int) string {
 
 func loadPages() map[string]*template.Template {
 	pages := map[string]*template.Template{}
-	for _, name := range []string{"desk", "wire", "reader", "session", "done", "dust", "shelf", "follow", "source", "login", "share"} {
+	for _, name := range []string{"desk", "wire", "reader", "session", "done", "dust", "shelf", "follow", "source", "login", "save", "share"} {
 		pages[name] = template.Must(template.New("").Funcs(funcs).ParseFS(assets, "templates/layout.html", "templates/"+name+".html"))
 	}
 	return pages
@@ -403,6 +403,102 @@ func (a *App) saveItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// ---- saving from another page ----
+
+// saveKey goes in the bookmarklet's address. With a password set, a save that arrives without it
+// (a link or redirect from some other site) asks first instead of saving straight away.
+func (a *App) saveKey() string {
+	if a.password == "" {
+		return ""
+	}
+	mac := hmac.New(sha256.New, []byte(a.password))
+	mac.Write([]byte("desk bookmarklet"))
+	return hex.EncodeToString(mac.Sum(nil))[:20]
+}
+
+var hostPattern = regexp.MustCompile(`^[A-Za-z0-9.\-:\[\]]+$`)
+
+// bookmarklet is a bookmark that opens /save on this Desk with the page you're on.
+func (a *App) bookmarklet(r *http.Request) template.URL {
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	host := r.Host
+	if !hostPattern.MatchString(host) {
+		host = "localhost" // a forged Host header must not write script into the bookmark
+	}
+	save := scheme + "://" + host + "/save?"
+	if k := a.saveKey(); k != "" {
+		save += "k=" + k + "&"
+	}
+	return template.URL("javascript:void(location.href=" + strconv.Quote(save+"url=") + "+encodeURIComponent(location.href))")
+}
+
+type saveData struct {
+	Bookmarklet template.URL
+	URL         string
+	Error       string
+	Ask         bool  // came without the bookmarklet's key, so it waits for a yes
+	Item        *Item // what was saved
+	Again       bool  // it was already on the stack
+	Self        string
+}
+
+// savePage is where the bookmarklet lands. A url is saved, then shown at /save?id=… so a refresh
+// or Back doesn't save it again. With no url the page explains the bookmarklet.
+func (a *App) savePage(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	d := saveData{Bookmarklet: a.bookmarklet(r), URL: q.Get("url"), Self: r.URL.RequestURI()}
+	if id, err := strconv.ParseInt(q.Get("id"), 10, 64); err == nil {
+		if it, err := a.item(id); err == nil {
+			d.Item, d.Again = &it, q.Has("again")
+			a.render(w, "save", "Saved", "", d)
+			return
+		}
+	}
+	if d.URL == "" {
+		a.render(w, "save", "Save from your browser", "save", d)
+		return
+	}
+	// With no password there's no key, so every save asks.
+	k := q.Get("k")
+	a.saveLink(w, r, d, k != "" && hmac.Equal([]byte(k), []byte(a.saveKey())))
+}
+
+// saveConfirmed is the yes to a save that asked first.
+func (a *App) saveConfirmed(w http.ResponseWriter, r *http.Request) {
+	a.saveLink(w, r, saveData{Bookmarklet: a.bookmarklet(r), URL: r.FormValue("url")}, true)
+}
+
+func (a *App) saveLink(w http.ResponseWriter, r *http.Request, d saveData, sure bool) {
+	u, err := normalizeURL(d.URL)
+	if p, perr := url.Parse(u); err == nil && perr == nil && p.Host == r.Host {
+		err = errors.New("that's a page of Desk itself")
+	}
+	switch {
+	case err != nil:
+		d.Error = "“" + d.URL + "” can't go on your stack: " + err.Error() + "."
+		a.render(w, "save", "Couldn't save", "", d)
+	case !sure:
+		d.Ask, d.URL = true, u
+		a.render(w, "save", "Save this page?", "", d)
+	default:
+		var again bool
+		a.db.QueryRow(`SELECT COUNT(*) > 0 FROM items WHERE url = ? AND status = 'stack'`, u).Scan(&again)
+		id, err := a.addItem(u, guessKind(u), "", 0)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		to := fmt.Sprintf("/save?id=%d", id)
+		if again {
+			to += "&again=1"
+		}
+		http.Redirect(w, r, to, http.StatusSeeOther)
+	}
 }
 
 var linkPattern = regexp.MustCompile(`https?://[^\s<>"]+`)

@@ -126,6 +126,14 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && menu && !e.target.closest("dialog")) { menu.open = false; menu.querySelector("summary").focus(); }
 });
 
+// The bookmarklet is meant to be dragged to the bookmarks bar; clicking it here would only save Desk itself.
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".bookmarklet")) return;
+  e.preventDefault();
+  const hint = document.getElementById("bookmarklet-hint");
+  if (hint) hint.textContent = "Drag it to your bookmarks bar instead, then click it there when you're on a page you want to keep.";
+});
+
 // ---- search everything: Cmd+K (Ctrl+K elsewhere) from any page ----
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
