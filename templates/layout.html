@@ -31,6 +31,7 @@
     <a href="/shelf" {{if eq .Nav "shelf"}}aria-current="page"{{end}}>Shelf</a>
     <a href="/follow" {{if eq .Nav "follow"}}aria-current="page"{{end}}>Follow</a>
   </nav>
+  <button class="find-open" type="button" aria-haspopup="dialog" aria-controls="finder" aria-keyshortcuts="Meta+K Control+K">Search <kbd class="find-key">⌘K</kbd></button>
   <details class="save-menu">
     <summary class="btn"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Save</summary>
     <form class="save" method="post" action="/items">
@@ -47,9 +48,28 @@
 <main class="page">{{template "content" .}}</main>
 {{if .Nav}}
 <footer class="foot">
-  {{if eq .Title "Desk"}}<p class="keys">Keys: <kbd>J</kbd> <kbd>K</kbd> move through the stack, <kbd>R</kbd> reads, <kbd>/</kbd> saves a link, <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> pick a time, <kbd>Esc</kbd> closes.</p>{{else}}<span></span>{{end}}
+  {{if eq .Title "Desk"}}<p class="keys">Keys: <kbd>J</kbd> <kbd>K</kbd> move through the stack, <kbd>R</kbd> reads, <kbd>/</kbd> saves a link, <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> pick a time, <kbd class="find-key">⌘K</kbd> searches everything, <kbd>Esc</kbd> closes.</p>{{else}}<span></span>{{end}}
   {{if .Auth}}<form method="post" action="/logout"><button class="link muted">Sign out</button></form>{{end}}
 </footer>
+<dialog class="finder" id="finder" aria-labelledby="finder-label">
+  <div class="finder-head">
+    <label id="finder-label" for="finder-q">Search everything</label>
+    <button class="link muted finder-close" type="button" value="close">Close <kbd>Esc</kbd></button>
+  </div>
+  <input id="finder-q" type="search" autofocus role="combobox" aria-expanded="true" aria-controls="finder-list" aria-autocomplete="list"
+    aria-describedby="finder-help" placeholder="Titles, sites, saved text" autocomplete="off" spellcheck="false" enterkeyhint="go">
+  <div class="finder-filters" role="group" aria-label="Where to look">
+    <button type="button" data-in="" aria-pressed="true">All</button>
+    <button type="button" data-in="stack" aria-pressed="false">Stack</button>
+    <button type="button" data-in="shelf" aria-pressed="false">Shelf</button>
+    <button type="button" data-in="dust" aria-pressed="false">Dust</button>
+  </div>
+  <p class="meta finder-help" id="finder-help">Type <b>site:</b> to narrow to one site. <span class="finder-arrows"><kbd>↑</kbd> <kbd>↓</kbd> choose, <kbd>Enter</kbd> opens.</span></p>
+  <p class="meta finder-recent" id="finder-heading" aria-hidden="true">Recent</p>
+  <ul class="finder-list" id="finder-list" role="listbox" aria-label="Results"></ul>
+  <p class="note finder-empty" id="finder-empty" hidden></p>
+  <p class="visually-hidden" id="finder-status" role="status" aria-live="polite"></p>
+</dialog>
 {{end}}
 </body>
 </html>{{end}}

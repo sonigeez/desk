@@ -593,3 +593,69 @@ a.post-title:hover { text-decoration: underline; text-decoration-color: var(--li
 .book-card .kind-switch .link { font-weight: 600; text-decoration: underline; text-decoration-color: var(--gilt); text-underline-offset: 3px; min-height: 0; }
 .book-card .kind-switch.quiet { opacity: 0.8; font-size: 0.8125rem; }
 .book-card .kind-switch.quiet .link { font-weight: 500; }
+
+/* ---- search everything (Cmd/Ctrl+K): an index card laid over the page ---- */
+.masthead { grid-template-columns: auto 1fr auto auto; grid-template-areas: "mark nav find save"; }
+.find-open {
+  grid-area: find; display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0;
+  border: 0; background: none; color: var(--ink-2); font: 600 0.95rem/1 var(--sans);
+}
+.find-open:hover { color: var(--ink); }
+.find-open kbd { font-weight: 500; color: var(--ink-3); }
+.finder {
+  width: min(640px, calc(100vw - 32px)); max-height: min(640px, calc(100dvh - 48px)); margin: 10vh auto auto; padding: 0;
+  display: none; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--line); border-top: 3px solid var(--ink); border-radius: 0 0 10px 10px;
+  background: var(--surface); color: var(--ink); box-shadow: 0 30px 60px -28px var(--shadow);
+}
+.finder[open] { display: flex; animation: settle 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.finder::backdrop { background: color-mix(in srgb, var(--paper) 55%, transparent); backdrop-filter: blur(2px); }
+.finder-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 16px 20px 8px; }
+.finder-head label { font: var(--t-section); letter-spacing: -0.02em; }
+.finder-close { gap: 6px; min-height: 32px; }
+.finder #finder-q {
+  flex: none; margin: 0 20px; width: calc(100% - 40px); min-height: 46px; font-size: 1.1rem;
+  border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; padding: 8px 0; background: none;
+}
+.finder #finder-q:focus-visible { outline: none; border-bottom-color: var(--mark); }
+.finder #finder-q::-webkit-search-cancel-button { display: none; }
+.finder-filters { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 12px 20px 0; }
+.finder-filters button {
+  min-height: 32px; padding: 0 1px; border: 0; background: none; color: var(--ink-2); font: 600 0.9rem/1 var(--sans);
+}
+.finder-filters button:hover { color: var(--ink); }
+.finder-filters button[aria-pressed="true"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }
+.finder-help { padding: 8px 20px 10px; border-bottom: 1px solid var(--line); }
+.finder-help b { font-weight: 600; color: var(--ink-2); }
+.finder-recent { padding: 12px 20px 0; }
+.finder-recent[hidden] { display: none; }
+.finder-list { flex: 0 1 auto; min-height: 0; list-style: none; margin: 0; padding: 6px 0 10px; overflow-y: auto; overscroll-behavior: contain; }
+.finder-list:empty { display: none; }
+.finder-list [role="option"] { position: relative; cursor: pointer; }
+.finder-list [aria-selected="true"] { background: var(--paper); box-shadow: inset 3px 0 0 var(--ink); }
+.finder-hit {
+  display: grid; grid-template-columns: 12px minmax(0, 1fr); column-gap: 14px; row-gap: 2px;
+  padding: 10px 20px; text-decoration: none; color: inherit;
+}
+.finder-hit > :not(.swatch) { grid-column: 2; min-width: 0; }
+.swatch {
+  grid-row: 1 / span 3; align-self: start; width: 12px; height: 34px; margin-top: 2px; border-radius: 2px;
+  background: var(--cloth) linear-gradient(to bottom, transparent 4px, var(--gilt) 4px 5px, transparent 5px calc(100% - 5px), var(--gilt) calc(100% - 5px) calc(100% - 4px), transparent calc(100% - 4px));
+  box-shadow: inset -2px 0 0 rgba(0, 0, 0, 0.18);
+}
+.finder-title { font: var(--t-title); font-size: 1.05rem; overflow-wrap: anywhere; }
+.finder-meta .place { color: var(--ink-2); font-weight: 600; }
+.finder-snip {
+  font: 400 0.92rem/1.45 var(--read); color: var(--ink-2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.finder mark { background: none; color: var(--ink); font-weight: 600; box-shadow: inset 0 -0.4em 0 color-mix(in srgb, var(--mark) 20%, transparent); }
+.finder-site { padding: 10px 20px 10px 46px; font-size: 0.95rem; }
+.finder-empty { padding: 18px 20px 24px; }
+@media (max-width: 560px) {
+  .masthead { grid-template-columns: 1fr auto auto; grid-template-areas: "mark find save" "nav nav nav"; }
+  .find-open { min-height: var(--tap); }
+  .find-open kbd, .finder-arrows, .finder-close kbd { display: none; }
+  .finder { margin-top: max(12px, env(safe-area-inset-top)); max-height: calc(100dvh - 24px); }
+}
+@media (pointer: coarse) { .find-open kbd, .finder-arrows, .finder-close kbd { display: none; } }
