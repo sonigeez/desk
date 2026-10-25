@@ -45,6 +45,7 @@
 
   --tap: 44px;
   --measure: 760px;
+  --below: env(safe-area-inset-bottom); /* what's pinned to the bottom edge sits above this */
   color-scheme: light;
 }
 
@@ -380,7 +381,7 @@ kbd {
 .progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; }
 .progress i { display: block; height: 100%; width: 0; background: var(--mark); }
 .article { max-width: 680px; padding-top: 40px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
-.article h1 { font: 700 clamp(1.9rem, 4.6vw, 2.6rem)/1.1 var(--sans); letter-spacing: -0.035em; }
+.article h1 { view-transition-name: piece; font: 700 clamp(1.9rem, 4.6vw, 2.6rem)/1.1 var(--sans); letter-spacing: -0.035em; }
 .byline { font: var(--t-meta); color: var(--ink-3); }
 .original a { display: inline-flex; gap: 4px; align-items: center; font-size: 0.9rem; color: var(--ink-2); }
 .prose { font: 400 var(--reader-size)/1.68 var(--read); margin-top: 18px; min-width: 0; overflow-wrap: anywhere; text-wrap: pretty; }
@@ -587,7 +588,7 @@ a.post-title:hover { text-decoration: underline; text-decoration-color: var(--li
 .session-labels span { font: var(--t-meta); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .session-labels .now { color: var(--ink); font-weight: 600; }
 .up-next {
-  position: fixed; z-index: 6; right: max(24px, env(safe-area-inset-right)); bottom: calc(24px + env(safe-area-inset-bottom));
+  position: fixed; z-index: 6; right: max(24px, env(safe-area-inset-right)); bottom: calc(24px + var(--below));
   max-width: min(300px, calc(100vw - 48px)); opacity: 0; transform: translateY(12px); pointer-events: none;
   transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -630,7 +631,7 @@ a.post-title:hover { text-decoration: underline; text-decoration-color: var(--li
 .offline-list a:hover .offline-title { text-decoration: underline; text-decoration-color: var(--line-2); }
 .offline-note {
   position: fixed; z-index: 10; left: 16px; right: 16px; margin: 0 auto; max-width: 560px;
-  bottom: calc(16px + env(safe-area-inset-bottom));
+  bottom: calc(16px + var(--below));
   box-shadow: 0 10px 24px -12px var(--shadow);
 }
 
@@ -858,3 +859,60 @@ textarea {
   .finder { margin-top: max(12px, env(safe-area-inset-top)); max-height: calc(100dvh - 24px); }
 }
 @media (pointer: coarse) { .find-open kbd, .finder-arrows, .finder-close kbd { display: none; } }
+
+/* ---- feeling like an app ---- */
+/* Page changes crossfade (app.js turns them on); a piece's title carries over from the stack into the reader. */
+::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
+  animation-duration: 0.24s; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tabs { display: none; }
+
+/* A tap shows at once, and a page being fetched stays faded until it arrives. */
+@media (hover: none) {
+  :is(a, button, summary):active { opacity: 0.7; transition: none; }
+}
+a.htmx-request { opacity: 0.6; }
+
+/* Installed to the home screen, the website tells go. Reading text, quotes and fields stay selectable. */
+@media (display-mode: standalone) {
+  html { overscroll-behavior-y: contain; -webkit-tap-highlight-color: transparent; }
+  .masthead, .tabs, .reader-bar, .foot, .back, .btn, .link, .chip, .seg, .timepick, .book summary, .spine-up, .hole, .finder-head, .finder-filters, .hl-bar, .up-next {
+    -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+  }
+  input, textarea { -webkit-user-select: text; user-select: text; }
+}
+
+/* ...and on a phone the main places move to a bar under your thumb. The page you're on is a book
+   lying in it, in its own cloth with gilt rules at both ends, like the spines on the stack. */
+@media (display-mode: standalone) and (max-width: 560px) {
+  :root { --below: calc(56px + env(safe-area-inset-bottom)); }
+  .masthead { grid-template-columns: 1fr auto; grid-template-areas: "mark save"; }
+  .masthead .nav, .masthead .find-open { display: none; }
+  .foot { padding-bottom: calc(28px + var(--below)); }
+  .tabs {
+    position: fixed; z-index: 8; left: 0; right: 0; bottom: 0;
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
+    padding: 6px max(12px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(12px, env(safe-area-inset-left));
+    background: var(--paper); border-top: 2px solid var(--ink);
+  }
+  .tabs a, .tabs button {
+    position: relative; display: flex; align-items: center; justify-content: center; gap: 5px;
+    height: 44px; min-height: 0; margin-bottom: 6px; padding: 0 12px; border: 0; border-radius: 2px 4px 4px 2px;
+    grid-area: auto; background: none; color: var(--ink-2); font: 650 0.95rem/1 var(--sans); text-decoration: none;
+  }
+  .tabs [aria-current="page"] {
+    color: var(--spine-ink); background-color: var(--cloth);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 2px),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 30%, transparent 70%, rgba(0, 0, 0, 0.16));
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 8px 12px -10px var(--shadow);
+  }
+  .tabs [aria-current="page"]::before, .tabs [aria-current="page"]::after {
+    content: ""; position: absolute; top: 24%; bottom: 24%; width: 1px; background: var(--gilt);
+  }
+  .tabs [aria-current="page"]::before { left: 8px; box-shadow: 3px 0 0 var(--gilt); }
+  .tabs [aria-current="page"]::after { right: 8px; box-shadow: -3px 0 0 var(--gilt); }
+  .tabs .count { color: inherit; opacity: 0.8; }
+  .tabs :focus-visible { outline-offset: -2px; }
+}

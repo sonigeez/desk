@@ -970,7 +970,7 @@ func (a *App) sourcePage(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	a.render(w, "source", views[0].Name, "desk", sourceData{Source: views[0], Posts: posts})
+	a.render(w, "source", views[0].Name, "wire", sourceData{Source: views[0], Posts: posts})
 }
 
 func (a *App) sourceAction(w http.ResponseWriter, r *http.Request) {

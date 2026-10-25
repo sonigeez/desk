@@ -10,6 +10,10 @@
 <link rel="manifest" href="/static/manifest.webmanifest">
 <meta name="theme-color" content="#f2f1ec" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#161513" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Desk">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" crossorigin href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
@@ -48,6 +52,12 @@
 {{end}}
 <main class="page">{{template "content" .}}</main>
 {{if .Nav}}
+<nav class="tabs" aria-label="Main">
+  <a href="/" style="--cloth: var(--c2)" {{if eq .Nav "desk"}}aria-current="page"{{end}}>Desk</a>
+  <a href="/wire" style="--cloth: var(--c1)" {{if or (eq .Nav "wire") (eq .Nav "follow")}}aria-current="page"{{end}}>Wire{{if .WireNew}} <span class="count">{{.WireNew}}<span class="visually-hidden"> new</span></span>{{end}}</a>
+  <a href="/shelf" style="--cloth: var(--c3)" {{if eq .Nav "shelf"}}aria-current="page"{{end}}>Shelf</a>
+  <button class="find-open" type="button" aria-haspopup="dialog" aria-controls="finder">Search</button>
+</nav>
 <footer class="foot">
   {{if eq .Title "Desk"}}<p class="keys">Keys: <kbd>J</kbd> <kbd>K</kbd> move through the stack, <kbd>R</kbd> reads, <kbd>/</kbd> saves a link, <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> pick a time, <kbd class="find-key">⌘K</kbd> searches everything, <kbd>Esc</kbd> closes.</p>{{else}}<span></span>{{end}}
   {{if .Auth}}<form method="post" action="/logout"><button class="link muted">Sign out</button></form>{{end}}
