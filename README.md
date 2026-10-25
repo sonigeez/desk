@@ -119,6 +119,8 @@ Keep the computer awake so new posts are found on time. On a Mac: System Setting
 
 On the desk: <kbd>J</kbd> <kbd>K</kbd> move through the stack, <kbd>R</kbd> reads, <kbd>/</kbd> saves a link, <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> pick 15, 30 or 60 minutes, <kbd>Esc</kbd> closes a book.
 
+Anywhere: <kbd>⌘</kbd> <kbd>K</kbd> (<kbd>Ctrl</kbd> <kbd>K</kbd> on Windows and Linux) searches everything on the stack, the shelf and in dust, by title, site or saved text. Type `site:jvns.ca` to stay on one site; <kbd>↑</kbd> <kbd>↓</kbd> choose and <kbd>Enter</kbd> opens. On a phone, tap Search at the top.
+
 ## Backups
 
 Everything is in `data/reading.db`. Copy that file somewhere safe. To copy it while the app is running:
