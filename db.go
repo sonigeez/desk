@@ -82,7 +82,10 @@ CREATE TABLE IF NOT EXISTS highlights (
   note       TEXT NOT NULL DEFAULT '',
   created_at INTEGER NOT NULL
 );
-CREATE INDEX IF NOT EXISTS highlights_item ON highlights(item_id);
+-- Ordered by position so the desk can take each piece's first few without reading every row.
+-- highlights_item was the first, item-only version of this index.
+DROP INDEX IF EXISTS highlights_item;
+CREATE INDEX IF NOT EXISTS highlights_item_pos ON highlights(item_id, pos_start);
 
 CREATE VIRTUAL TABLE IF NOT EXISTS highlights_fts USING fts5(quote, note, content='highlights', content_rowid='id');
 

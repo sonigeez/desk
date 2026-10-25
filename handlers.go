@@ -289,20 +289,21 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 // ---- desk ----
 
 type deskData struct {
-	Self        string
-	Budget      int
-	Stack       []Item
-	Picked      map[int64]bool
-	PickCount   int
-	PickMinutes int
-	Total       int
-	Pending     bool
-	Dust        []Item
-	Continue    *Item                 // the half-read piece opened most recently
-	Gone        *Item                 // just let go of, offered for undo
-	Done        *Item                 // just marked read, offered for undo
-	Highlights  map[int64][]Highlight // by item, in reading order, for the covers
-	Error       string
+	Self           string
+	Budget         int
+	Stack          []Item
+	Picked         map[int64]bool
+	PickCount      int
+	PickMinutes    int
+	Total          int
+	Pending        bool
+	Dust           []Item
+	Continue       *Item                 // the half-read piece opened most recently
+	Gone           *Item                 // just let go of, offered for undo
+	Done           *Item                 // just marked read, offered for undo
+	Highlights     map[int64][]Highlight // by item, the first two in reading order, for the covers
+	HighlightCount map[int64]int         // how many highlights each item has
+	Error          string
 }
 
 func (a *App) desk(w http.ResponseWriter, r *http.Request) {
@@ -338,9 +339,23 @@ func (a *App) desk(w http.ResponseWriter, r *http.Request) {
 	}
 	d.Dust, _ = a.dust()
 	d.Highlights = map[int64][]Highlight{}
-	hs, _ := a.highlights(`WHERE i.status = 'stack' ORDER BY h.item_id, h.pos_start`)
+	// Only the first two on each stacked piece, found through the stack so old highlights on read pieces cost nothing.
+	hs, _ := a.highlights(`WHERE h.id IN (SELECT f.id FROM items s JOIN highlights f
+		ON f.id IN (SELECT id FROM highlights WHERE item_id = s.id ORDER BY pos_start LIMIT 2) WHERE s.status = 'stack')
+		ORDER BY h.item_id, h.pos_start`)
 	for _, h := range hs {
 		d.Highlights[h.ItemID] = append(d.Highlights[h.ItemID], h)
+	}
+	d.HighlightCount = map[int64]int{}
+	if rows, err := a.db.Query(`SELECT item_id, COUNT(*) FROM highlights
+		WHERE item_id IN (SELECT id FROM items WHERE status = 'stack') GROUP BY item_id`); err == nil {
+		for rows.Next() {
+			var id int64
+			var n int
+			rows.Scan(&id, &n)
+			d.HighlightCount[id] = n
+		}
+		rows.Close()
 	}
 	a.render(w, "desk", "Desk", "desk", d)
 }
