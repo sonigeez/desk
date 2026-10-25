@@ -14,6 +14,22 @@ One Go program and one SQLite file. No accounts, no cloud, nothing to subscribe 
 
 ## Run it
 
+Pick whichever suits you. All three run the same program.
+
+### With Docker
+
+```bash
+docker run -d --name desk -p 8080:8080 -e DESK_PASSWORD=change-me -v ./data:/data --restart unless-stopped ghcr.io/sonigeez/desk:latest
+```
+
+Or with Docker Compose: download [compose.yaml](compose.yaml), set your password in it, then run `docker compose up -d`. Your data is in `./data/reading.db`.
+
+### Download a binary
+
+Grab the file for your system from [Releases](https://github.com/sonigeez/desk/releases), unpack it, and run `./desk` (on Windows, `desk.exe`).
+
+### From source
+
 You need [Go](https://go.dev/dl/) 1.26 or newer.
 
 ```bash

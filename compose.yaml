@@ -1,0 +1,11 @@
+services:
+  desk:
+    image: ghcr.io/sonigeez/desk:latest
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DESK_PASSWORD: change-me # pick your own
+    volumes:
+      - ./data:/data # your reading.db lives here
+    restart: unless-stopped
