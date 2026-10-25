@@ -428,8 +428,8 @@ func (a *App) saveKey() string {
 
 var hostPattern = regexp.MustCompile(`^[A-Za-z0-9.\-:\[\]]+$`)
 
-// bookmarklet is a bookmark that opens /save on this Desk with the page you're on.
-func (a *App) bookmarklet(r *http.Request) template.URL {
+// origin is the address this Desk was reached at, like https://desk.example.com.
+func origin(r *http.Request) string {
 	scheme := "http"
 	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
 		scheme = "https"
@@ -438,7 +438,12 @@ func (a *App) bookmarklet(r *http.Request) template.URL {
 	if !hostPattern.MatchString(host) {
 		host = "localhost" // a forged Host header must not write script into the bookmark
 	}
-	save := scheme + "://" + host + "/save?"
+	return scheme + "://" + host
+}
+
+// bookmarklet is a bookmark that opens /save on this Desk with the page you're on.
+func (a *App) bookmarklet(r *http.Request) template.URL {
+	save := origin(r) + "/save?"
 	if k := a.saveKey(); k != "" {
 		save += "k=" + k + "&"
 	}
@@ -453,13 +458,14 @@ type saveData struct {
 	Item        *Item // what was saved
 	Again       bool  // it was already on the stack
 	Self        string
+	Origin      string // this Desk's address, for the iPhone shortcut to ask for
 }
 
 // savePage is where the bookmarklet lands. A url is saved, then shown at /save?id=… so a refresh
 // or Back doesn't save it again. With no url the page explains the bookmarklet.
 func (a *App) savePage(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	d := saveData{Bookmarklet: a.bookmarklet(r), URL: q.Get("url"), Self: r.URL.RequestURI()}
+	d := saveData{Bookmarklet: a.bookmarklet(r), URL: q.Get("url"), Self: r.URL.RequestURI(), Origin: origin(r)}
 	if id, err := strconv.ParseInt(q.Get("id"), 10, 64); err == nil {
 		if it, err := a.item(id); err == nil {
 			d.Item, d.Again = &it, q.Has("again")

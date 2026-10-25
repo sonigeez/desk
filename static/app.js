@@ -221,6 +221,15 @@ document.addEventListener("click", (e) => {
   if (hint) hint.textContent = "Drag it to your bookmarks bar instead, then click it there when you're on a page you want to keep.";
 });
 
+document.addEventListener("click", (e) => {
+  const button = e.target.closest("[data-copy]");
+  if (!button) return;
+  navigator.clipboard?.writeText(button.dataset.copy).then(() => {
+    button.textContent = "Copied";
+    setTimeout(() => { button.textContent = "Copy"; }, 2000);
+  }).catch(() => {});
+});
+
 // ---- search everything: Cmd+K (Ctrl+K elsewhere) from any page ----
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);

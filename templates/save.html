@@ -38,6 +38,8 @@
   <div class="actions"><a class="btn ghost" href="/">Go to your desk</a></div>
   {{else}}
   <h1 class="display">Save from your browser</h1>
+  <div class="save-ways">
+  <section class="save-way">
   <p class="lede">Put a Save to Desk button in your browser's bookmarks bar. Then, on any page you want to read later, click it and the page goes on your stack.</p>
   <div class="bm-demo">
     <div class="bm-window" aria-hidden="true">
@@ -54,6 +56,18 @@
   </ol>
   <p class="meta bookmarklet-hint" id="bookmarklet-hint" role="status"></p>
   <p class="meta">No bookmarks bar? Show it with <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>B</kbd> on a Mac, or <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>B</kbd> on Windows and Linux.</p>
+  </section>
+  <section class="save-way phone-way" id="phone" aria-labelledby="phone-h">
+  <h2 id="phone-h">On your iPhone</h2>
+  <ol class="bm-steps">
+    <li>Copy your Desk address:
+      <span class="copy-field"><code>{{.Origin}}</code><button type="button" class="link" data-copy="{{.Origin}}">Copy</button></span></li>
+    <li><a href="/static/save-to-desk.shortcut" download="Save to Desk.shortcut"><b>Add the Save to Desk shortcut</b></a>, and paste the address when Shortcuts asks for it.</li>
+    <li>In any app, tap Share, then <b>Save to Desk</b>. If it isn't in the list, scroll to the end and tap Edit Actions to add it.</li>
+  </ol>
+  <p class="meta">On Android, open Desk in Chrome and choose Add to Home screen from the menu. Desk then shows up in the share menu by itself.</p>
+  </section>
+  </div>
   {{end}}
 </div>
 {{end}}{{end}}

@@ -107,15 +107,14 @@ Chrome installs Desk from the menu, and the share target comes with the install.
 
 ### Save links from iPhone
 
-iPhone doesn't let web apps appear in the share sheet, so a small Shortcut does it. Build it once in the Shortcuts app:
+iPhone doesn't let web apps appear in the share sheet, so a small Shortcut does it. Desk comes with one:
 
-1. Tap **+** to start a new shortcut and name it "Save to Desk".
-2. Tap the **ⓘ** (Details) button and turn on **Show in Share Sheet**. Tap Done.
-3. The shortcut now starts with "Receive **Any** input from **Share Sheet**". Tap **Any** and keep only **URLs** and **Safari web pages**.
-4. Add the **URL Encode** action. It encodes **Shortcut Input**.
-5. Add the **Open URLs** action. Tap its URL field, type `https://<computer-name>.<tailnet-name>.ts.net/share?url=`, then insert the **URL Encoded Text** variable at the end.
+1. On the iPhone, open Desk, tap **Save**, then **Save from your phone or any page**. The page has an **On your iPhone** section.
+2. Copy your Desk address there, then tap **Add the Save to Desk shortcut**. Shortcuts opens; paste the address when it asks.
 
-Now in Safari or any app, Share → Save to Desk. It opens Desk in Safari, which saves the link and shows "Saved to your stack". It uses Safari's sign-in, so sign in to Desk in Safari once.
+Now in any app, Share → Save to Desk. It opens Desk in your default browser, which saves the link and shows "Saved to your stack". Sign in to Desk in that browser once.
+
+The shortcut is `static/save-to-desk.shortcut`. To rebuild it yourself: a shortcut shown in the Share Sheet that receives URLs and Safari web pages, URL Encodes the Shortcut Input, and opens `<your Desk address>/share?url=` followed by the URL Encoded Text. Sign it with `shortcuts sign --mode anyone` on a Mac.
 
 To put Desk on the home screen, open it in Safari and Share → Add to Home Screen.
 

@@ -773,6 +773,21 @@ textarea {
 }
 @media (prefers-reduced-motion: reduce) { .bm-ghost { animation: none; opacity: 0.55; } }
 @media (max-width: 420px) { .bm-bar-label { display: none; } }
+.save-ways { display: flex; flex-direction: column; gap: 40px; }
+.save-way { display: grid; gap: 20px; }
+.phone-way { padding-top: 28px; border-top: 1px solid var(--line); }
+.phone-way h2 { font: var(--t-section); }
+.copy-field {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px;
+  padding: 8px 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface);
+}
+.copy-field code { min-width: 0; overflow-wrap: anywhere; font: 500 0.95rem/1.3 var(--sans); }
+.copy-field .link { flex: none; min-height: 32px; }
+/* On a phone the bookmarks bar doesn't apply, so the phone steps come first. */
+@media (pointer: coarse) {
+  .phone-way { order: -1; padding-top: 0; border-top: 0; }
+  .save-way:not(.phone-way) { padding-top: 28px; border-top: 1px solid var(--line); }
+}
 .save-elsewhere { justify-self: start; text-decoration: none; }
 .save-elsewhere:hover { color: var(--ink); text-decoration: underline; }
 .saved.alone { margin: 8vh auto 0; }

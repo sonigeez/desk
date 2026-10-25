@@ -51,6 +51,7 @@ func main() {
 
 func (a *App) routes() http.Handler {
 	mime.AddExtensionType(".webmanifest", "application/manifest+json")
+	mime.AddExtensionType(".shortcut", "application/octet-stream")
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(assets))
 	mux.HandleFunc("GET /static/sw.js", serviceWorker)
