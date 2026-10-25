@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
@@ -427,6 +428,20 @@ func (a *App) saveKey() string {
 }
 
 var hostPattern = regexp.MustCompile(`^[A-Za-z0-9.\-:\[\]]+$`)
+
+// shortcutFile is the iPhone's Save to Desk shortcut. Marked as a download, or Safari shows the
+// signed file as text instead of handing it to Shortcuts.
+func shortcutFile(w http.ResponseWriter, r *http.Request) {
+	file, err := fs.ReadFile(assets, "static/save-to-desk.shortcut")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", `attachment; filename="Save to Desk.shortcut"`)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Write(file)
+}
 
 // origin is the address this Desk was reached at, like https://desk.example.com.
 func origin(r *http.Request) string {

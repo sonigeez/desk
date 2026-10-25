@@ -51,10 +51,10 @@ func main() {
 
 func (a *App) routes() http.Handler {
 	mime.AddExtensionType(".webmanifest", "application/manifest+json")
-	mime.AddExtensionType(".shortcut", "application/octet-stream")
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(assets))
 	mux.HandleFunc("GET /static/sw.js", serviceWorker)
+	mux.HandleFunc("GET /static/save-to-desk.shortcut", shortcutFile)
 	mux.HandleFunc("GET /login", a.loginPage)
 	mux.HandleFunc("POST /login", a.login)
 	mux.HandleFunc("POST /logout", a.logout)
