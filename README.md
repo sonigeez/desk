@@ -103,7 +103,7 @@ It prints Desk's new address, `https://<computer-name>.<tailnet-name>.ts.net`, r
 
 Desk finds the link whether the app shares it as a link, inside a sentence, or as the title. If you aren't signed in, Desk asks for the password and then saves the link.
 
-Chrome installs Desk from the menu without a service worker, and the share target comes with the install. Chrome won't pop up its own install suggestion until Desk has a service worker; that arrives with offline reading.
+Chrome installs Desk from the menu, and the share target comes with the install.
 
 ### Save links from iPhone
 
@@ -118,6 +118,12 @@ iPhone doesn't let web apps appear in the share sheet, so a small Shortcut does 
 Now in Safari or any app, Share → Save to Desk. It opens Desk in Safari, which saves the link and shows "Saved to your stack". It uses Safari's sign-in, so sign in to Desk in Safari once.
 
 To put Desk on the home screen, open it in Safari and Share → Add to Home Screen.
+
+### Read offline
+
+While Desk is reachable, your phone quietly keeps a copy of every piece on the stack (the top 50), so they still open when the computer sleeps or Tailscale is off. Books kept on the phone get a small gilt dot on the spine. Other pages show a list of what you can read, and reading positions are sent once Desk is back.
+
+This needs the HTTPS address from `tailscale serve` above: browsers only run the offline helper on `https://` or `localhost`, so the plain `http://<computer-name>:8080` address works online but keeps nothing. Signing out clears the copies.
 
 Keep the computer awake so new posts are found on time. On a Mac: System Settings → Battery → Options → "Prevent automatic sleeping when the display is off" (while plugged in).
 
