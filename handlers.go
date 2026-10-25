@@ -255,7 +255,8 @@ type loginData struct {
 
 // localPath keeps a post-login redirect on this site: a path, never another host.
 func localPath(next string) string {
-	if !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") || strings.HasPrefix(next, "/\\") {
+	// Browsers drop tabs and newlines and read \ as /, so "/\t/evil.com" would leave the site.
+	if !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") || strings.ContainsAny(next, "\\\t\r\n") {
 		return "/"
 	}
 	return next
@@ -418,7 +419,8 @@ func sharedLink(r *http.Request) string {
 			return link
 		}
 	}
-	return ""
+	// A bare address with no scheme, like example.com/post.
+	return r.FormValue("url")
 }
 
 type shareData struct {
@@ -426,6 +428,7 @@ type shareData struct {
 	Site  string
 	Error string
 	Got   string // what was shared, shown when no link was found in it
+	Ask   bool   // opened from another site, so save only once you confirm
 }
 
 // share is the Web Share Target: Android's share sheet (and the iPhone shortcut) opens it with the link.
@@ -438,13 +441,20 @@ func (a *App) share(w http.ResponseWriter, r *http.Request) {
 		a.render(w, "share", "Nothing saved", "", d)
 		return
 	}
-	if _, err := a.addItem(u, guessKind(u), "", 0); err != nil {
-		fail(w, err)
-		return
-	}
 	d.URL = u
 	if p, err := url.Parse(u); err == nil {
 		d.Site = strings.TrimPrefix(p.Hostname(), "www.")
+	}
+	// The share sheet and the shortcut open this directly. A link or redirect from another site
+	// would carry the sign-in cookie too, so that asks before saving.
+	if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "none" && site != "same-origin" {
+		d.Ask = true
+		a.render(w, "share", "Save this?", "", d)
+		return
+	}
+	if _, err := a.addItem(u, guessKind(u), "", 0); err != nil {
+		fail(w, err)
+		return
 	}
 	a.render(w, "share", "Saved", "", d)
 }

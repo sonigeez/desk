@@ -6,6 +6,16 @@
   <p class="lede">Desk looks for a web address in whatever is shared with it, and there wasn't one here.</p>
   {{if .Got}}<p class="shared-got">{{.Got}}</p>{{else}}<p class="meta">Nothing came through with the share.</p>{{end}}
   <p class="meta">Try sharing the page itself rather than a selection, or paste the link with Save on the desk.</p>
+  {{else if .Ask}}
+  <h1 class="display">Save this to your stack?</h1>
+  <div class="shared-book" style="--cloth:var(--{{cloth .URL}})">
+    <span class="shared-site">{{.Site}}</span>
+    <span class="shared-url">{{.URL}}</span>
+  </div>
+  <form class="actions" method="post" action="/items">
+    <input type="hidden" name="url" value="{{.URL}}">
+    <button class="btn big">Save it</button>
+  </form>
   {{else}}
   <h1 class="display">Saved to your stack</h1>
   <div class="shared-book" style="--cloth:var(--{{cloth .URL}})">
