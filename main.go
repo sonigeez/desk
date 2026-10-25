@@ -57,6 +57,8 @@ func (a *App) routes() http.Handler {
 
 	mux.HandleFunc("GET /{$}", a.desk)
 	mux.HandleFunc("POST /items", a.saveItem)
+	mux.HandleFunc("GET /save", a.savePage)
+	mux.HandleFunc("POST /save", a.saveConfirmed)
 	mux.HandleFunc("POST /items/{id}/top", a.itemAction)
 	mux.HandleFunc("POST /items/{id}/keep", a.itemAction)
 	mux.HandleFunc("POST /items/{id}/drop", a.itemAction)

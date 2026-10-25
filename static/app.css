@@ -593,3 +593,24 @@ a.post-title:hover { text-decoration: underline; text-decoration-color: var(--li
 .book-card .kind-switch .link { font-weight: 600; text-decoration: underline; text-decoration-color: var(--gilt); text-underline-offset: 3px; min-height: 0; }
 .book-card .kind-switch.quiet { opacity: 0.8; font-size: 0.8125rem; }
 .book-card .kind-switch.quiet .link { font-weight: 500; }
+
+/* ---- saving from another page (the bookmarklet's landing) ---- */
+.saved { max-width: 560px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-content: start; }
+.saved-head { display: grid; gap: 6px; }
+.saved-url { overflow-wrap: anywhere; }
+.saved .wordmark { justify-self: start; margin-bottom: 12px; }
+/* .wordmark names a grid area for the masthead; on these pages it would add stray columns */
+.saved .wordmark, .login .wordmark { grid-area: auto; }
+.saved .actions .btn { gap: 2px; }
+.bookmarklet {
+  display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px 10px 12px; border-radius: 999px;
+  border: 1px solid var(--line-2); background: var(--surface); box-shadow: 0 8px 18px -14px var(--shadow);
+  font: 650 1rem/1 var(--sans); text-decoration: none; cursor: grab;
+}
+.bookmarklet:hover { border-color: var(--ink-3); }
+.bookmarklet:active { cursor: grabbing; }
+.bookmarklet-hint:empty { display: none; }
+.save-elsewhere { justify-self: start; text-decoration: none; }
+.save-elsewhere:hover { color: var(--ink); text-decoration: underline; }
+.saved.alone { margin: 8vh auto 0; }
+.saved .meta a { text-decoration: underline; }
