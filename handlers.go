@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -134,7 +135,7 @@ func mins(m int) string {
 
 func loadPages() map[string]*template.Template {
 	pages := map[string]*template.Template{}
-	for _, name := range []string{"desk", "wire", "reader", "session", "done", "dust", "shelf", "follow", "source", "login"} {
+	for _, name := range []string{"desk", "wire", "reader", "session", "done", "dust", "shelf", "follow", "source", "login", "share"} {
 		pages[name] = template.Must(template.New("").Funcs(funcs).ParseFS(assets, "templates/layout.html", "templates/"+name+".html"))
 	}
 	return pages
@@ -238,23 +239,42 @@ func (a *App) requireLogin(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		to := "/login"
+		// A page asked for while signed out, such as a shared link, opens once you sign in.
+		if r.Method == http.MethodGet && r.URL.Path != "/" {
+			to += "?next=" + url.QueryEscape(r.URL.RequestURI())
+		}
+		http.Redirect(w, r, to, http.StatusSeeOther)
 	})
 }
 
+type loginData struct {
+	Error string
+	Next  string
+}
+
+// localPath keeps a post-login redirect on this site: a path, never another host.
+func localPath(next string) string {
+	if !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") || strings.HasPrefix(next, "/\\") {
+		return "/"
+	}
+	return next
+}
+
 func (a *App) loginPage(w http.ResponseWriter, r *http.Request) {
-	a.render(w, "login", "Sign in", "", "")
+	a.render(w, "login", "Sign in", "", loginData{Next: localPath(r.URL.Query().Get("next"))})
 }
 
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
+	next := localPath(r.FormValue("next"))
 	if a.password == "" || subtle.ConstantTimeCompare([]byte(r.FormValue("password")), []byte(a.password)) != 1 {
 		time.Sleep(time.Second)
-		a.render(w, "login", "Sign in", "", "That password didn't match. Try again.")
+		a.render(w, "login", "Sign in", "", loginData{Error: "That password didn't match. Try again.", Next: next})
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: "desk", Value: a.sessionToken(), Path: "/", MaxAge: 365 * 86400,
 		HttpOnly: true, SameSite: http.SameSiteLaxMode})
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, next, http.StatusSeeOther)
 }
 
 func (a *App) logout(w http.ResponseWriter, r *http.Request) {
@@ -382,6 +402,51 @@ func (a *App) saveItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+var linkPattern = regexp.MustCompile(`https?://[^\s<>"]+`)
+
+// sharedLink finds the first web address in what another app shared. Apps put it in url, text or
+// title, often with words around it, as in "Worth a read https://example.com/post".
+func sharedLink(r *http.Request) string {
+	for _, field := range []string{"url", "text", "title"} {
+		if link := linkPattern.FindString(r.FormValue(field)); link != "" {
+			link = strings.TrimRight(link, ".,;:!?'")
+			if !strings.Contains(link, "(") {
+				link = strings.TrimRight(link, ")")
+			}
+			return link
+		}
+	}
+	return ""
+}
+
+type shareData struct {
+	URL   string
+	Site  string
+	Error string
+	Got   string // what was shared, shown when no link was found in it
+}
+
+// share is the Web Share Target: Android's share sheet (and the iPhone shortcut) opens it with the link.
+func (a *App) share(w http.ResponseWriter, r *http.Request) {
+	d := shareData{}
+	u, err := normalizeURL(sharedLink(r))
+	if err != nil {
+		d.Error = "No link found"
+		d.Got = strings.TrimSpace(strings.Join([]string{r.FormValue("title"), r.FormValue("text"), r.FormValue("url")}, " "))
+		a.render(w, "share", "Nothing saved", "", d)
+		return
+	}
+	if _, err := a.addItem(u, guessKind(u), "", 0); err != nil {
+		fail(w, err)
+		return
+	}
+	d.URL = u
+	if p, err := url.Parse(u); err == nil {
+		d.Site = strings.TrimPrefix(p.Hostname(), "www.")
+	}
+	a.render(w, "share", "Saved", "", d)
 }
 
 // guessKind treats a site's home page as a whole site to read through, and anything deeper as an article.
