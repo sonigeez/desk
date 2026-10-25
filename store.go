@@ -149,8 +149,9 @@ func (a *App) shelf(q string) ([]ShelfWeek, error) {
 	var its []Item
 	var err error
 	if q = ftsQuery(q); q != "" {
-		its, err = a.items(`WHERE status = 'read' AND id IN (SELECT rowid FROM items_fts WHERE items_fts MATCH ?)
-			ORDER BY read_at DESC`, q)
+		its, err = a.items(`WHERE status = 'read' AND (id IN (SELECT rowid FROM items_fts WHERE items_fts MATCH ?)
+			OR id IN (SELECT item_id FROM highlights WHERE id IN (SELECT rowid FROM highlights_fts WHERE highlights_fts MATCH ?)))
+			ORDER BY read_at DESC`, q, q)
 	} else {
 		its, err = a.items(`WHERE status = 'read' ORDER BY read_at DESC`)
 	}
@@ -441,4 +442,54 @@ func (a *App) readingYear(shelves, perShelf int) (ReadingYear, error) {
 		}
 	}
 	return yr, nil
+}
+
+// ---- highlights ----
+
+type Highlight struct {
+	ID        int64  `json:"id"`
+	ItemID    int64  `json:"-"`
+	Quote     string `json:"quote"`
+	Prefix    string `json:"prefix"`
+	Suffix    string `json:"suffix"`
+	Start     int    `json:"start"`
+	End       int    `json:"end"`
+	Note      string `json:"note"`
+	CreatedAt int64  `json:"-"`
+	Title     string `json:"-"` // the piece it is from
+	URL       string `json:"-"`
+}
+
+func (a *App) highlights(where string, args ...any) ([]Highlight, error) {
+	rows, err := a.db.Query(`SELECT h.id, h.item_id, h.quote, h.prefix, h.suffix, h.pos_start, h.pos_end, h.note, h.created_at, i.title, i.url
+		FROM highlights h JOIN items i ON i.id = h.item_id `+where, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Highlight
+	for rows.Next() {
+		var h Highlight
+		if err := rows.Scan(&h.ID, &h.ItemID, &h.Quote, &h.Prefix, &h.Suffix, &h.Start, &h.End, &h.Note, &h.CreatedAt, &h.Title, &h.URL); err != nil {
+			return nil, err
+		}
+		out = append(out, h)
+	}
+	return out, rows.Err()
+}
+
+func (a *App) addHighlight(h Highlight) (int64, error) {
+	var id int64
+	err := a.db.QueryRow(`INSERT INTO highlights (item_id, quote, prefix, suffix, pos_start, pos_end, note, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+		h.ItemID, h.Quote, h.Prefix, h.Suffix, h.Start, h.End, h.Note, time.Now().Unix()).Scan(&id)
+	return id, err
+}
+
+// searchHighlights finds highlights whose quote or note matches, newest first.
+func (a *App) searchHighlights(q string) ([]Highlight, error) {
+	if q = ftsQuery(q); q == "" {
+		return nil, nil
+	}
+	return a.highlights(`WHERE h.id IN (SELECT rowid FROM highlights_fts WHERE highlights_fts MATCH ?) ORDER BY h.created_at DESC, h.id DESC`, q)
 }

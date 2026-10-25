@@ -29,7 +29,29 @@
   <h1>{{.Item.Title}}</h1>
   <p class="original"><a href="{{.Item.URL}}" target="_blank" rel="noopener">Open the original {{template "i-out"}}</a></p>
   {{if .Content}}
-  <div class="prose">{{.Content}}</div>
+  <div class="prose" id="prose">{{.Content}}</div>
+  <section class="hl-list" id="hl-list" aria-labelledby="hl-list-h" hidden>
+    <h2 id="hl-list-h">Your highlights</h2>
+    <ol></ol>
+  </section>
+  <script type="application/json" id="hl-data">{{.Highlights}}</script>
+  <div class="hl-bar" id="hl-bar" role="toolbar" aria-label="Selected text" hidden>
+    <button type="button" data-hl="mark" aria-keyshortcuts="H">Highlight</button>
+    <button type="button" data-hl="note" aria-keyshortcuts="N">Highlight with a note</button>
+  </div>
+  <dialog class="hl-dialog" id="hl-dialog" aria-labelledby="hl-dialog-h">
+    <form method="dialog" hx-boost="false">
+      <h2 id="hl-dialog-h" class="field-label">Your highlight</h2>
+      <blockquote id="hl-quote"></blockquote>
+      <label class="field-label" for="hl-note">Note</label>
+      <textarea id="hl-note" rows="4"></textarea>
+      <div class="hl-actions">
+        <button class="btn" value="save">Save note</button>
+        <button class="link muted" value="remove">Remove highlight</button>
+        <button class="link muted hl-close" value="">Close</button>
+      </div>
+    </form>
+  </dialog>
   {{else}}
   <p class="note">No readable text was saved for this page. <a href="{{.Item.URL}}" target="_blank" rel="noopener">Read it on the original site {{template "i-out"}}</a></p>
   {{end}}
