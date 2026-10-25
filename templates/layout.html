@@ -6,6 +6,10 @@
 <meta name="color-scheme" content="light dark">
 <title>{{if eq .Title "Desk"}}Desk{{else}}{{.Title}} · Desk{{end}}</title>
 <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<meta name="theme-color" content="#f2f1ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161513" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
@@ -17,12 +21,7 @@
 {{if .Nav}}
 <header class="masthead">
   <a class="wordmark" href="/">
-    <svg class="mark" viewBox="0 0 28 22" aria-hidden="true">
-      <rect x="4" y="15" width="22" height="6" rx="1" fill="var(--c1)"/>
-      <rect x="1" y="8" width="23" height="6" rx="1" fill="var(--c2)"/>
-      <rect x="5" y="1" width="20" height="6" rx="1" fill="var(--c3)"/>
-      <path d="M7 16.5v3M9 16.5v3M4 9.5v3M6 9.5v3M8 2.5v3M10 2.5v3" stroke="var(--gilt)" stroke-width=".8"/>
-    </svg>
+    {{template "mark"}}
     <span>Desk</span>
   </a>
   <nav class="nav" aria-label="Main">
@@ -74,6 +73,12 @@
 </body>
 </html>{{end}}
 
+{{define "mark"}}<svg class="mark" viewBox="0 0 28 22" aria-hidden="true">
+  <rect x="4" y="15" width="22" height="6" rx="1" fill="var(--c1)"/>
+  <rect x="1" y="8" width="23" height="6" rx="1" fill="var(--c2)"/>
+  <rect x="5" y="1" width="20" height="6" rx="1" fill="var(--c3)"/>
+  <path d="M7 16.5v3M9 16.5v3M4 9.5v3M6 9.5v3M8 2.5v3M10 2.5v3" stroke="var(--gilt)" stroke-width=".8"/>
+</svg>{{end}}
 {{define "i-back"}}<svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}
 {{define "i-next"}}<svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}
 {{define "i-out"}}<svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5h6.5V10M12.5 3.5 4 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}

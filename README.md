@@ -77,7 +77,41 @@ The simplest private way is [Tailscale](https://tailscale.com):
 
 1. Install Tailscale on the computer running Desk and on your phone, signed in to the same account.
 2. On the phone, open `http://<computer-name>:8080`.
-3. On iPhone, Share → Add to Home Screen makes it feel like an app.
+
+That's enough to read. To install Desk as an app and save links from other apps' share menus, the phone needs an HTTPS address, which browsers require for those features. Tailscale can give Desk one with a real certificate:
+
+1. In the Tailscale admin console, under DNS, turn on MagicDNS and HTTPS Certificates.
+2. On the computer running Desk, run:
+
+```bash
+tailscale serve --bg localhost:8080
+```
+
+It prints Desk's new address, `https://<computer-name>.<tailnet-name>.ts.net`, reachable only from your own devices. It keeps serving after restarts; `tailscale serve status` shows it and `tailscale serve reset` turns it off. Use this address on the phone from now on.
+
+### Save links from Android
+
+1. Open the `https://…ts.net` address in Chrome and sign in.
+2. Chrome menu (⋮) → Add to Home screen → Install.
+3. In any app, Share → Desk. The link goes on top of your stack and Desk shows "Saved to your stack".
+
+Desk finds the link whether the app shares it as a link, inside a sentence, or as the title. If you aren't signed in, Desk asks for the password and then saves the link.
+
+Chrome installs Desk from the menu without a service worker, and the share target comes with the install. Chrome won't pop up its own install suggestion until Desk has a service worker; that arrives with offline reading.
+
+### Save links from iPhone
+
+iPhone doesn't let web apps appear in the share sheet, so a small Shortcut does it. Build it once in the Shortcuts app:
+
+1. Tap **+** to start a new shortcut and name it "Save to Desk".
+2. Tap the **ⓘ** (Details) button and turn on **Show in Share Sheet**. Tap Done.
+3. The shortcut now starts with "Receive **Any** input from **Share Sheet**". Tap **Any** and keep only **URLs** and **Safari web pages**.
+4. Add the **URL Encode** action. It encodes **Shortcut Input**.
+5. Add the **Open URLs** action. Tap its URL field, type `https://<computer-name>.<tailnet-name>.ts.net/share?url=`, then insert the **URL Encoded Text** variable at the end.
+
+Now in Safari or any app, Share → Save to Desk. It opens Desk in Safari, which saves the link and shows "Saved to your stack". It uses Safari's sign-in, so sign in to Desk in Safari once.
+
+To put Desk on the home screen, open it in Safari and Share → Add to Home Screen.
 
 Keep the computer awake so new posts are found on time. On a Mac: System Settings → Battery → Options → "Prevent automatic sleeping when the display is off" (while plugged in).
 
@@ -100,6 +134,7 @@ sqlite3 data/reading.db ".backup backup.db"
 - **Saving a link** puts it on top of the stack and fetches the page in the background to pull out the readable text ([fetch.go](fetch.go)).
 - **Following a blog** finds its RSS or Atom feed. If there isn't one, Desk watches the page for new links instead, which is less precise. Every hour it checks for posts it hasn't seen ([fetch.go](fetch.go), `pollFeeds`).
 - **Pages** are rendered on the server from [templates/](templates/). [htmx](https://htmx.org) (`static/htmx.min.js`) lets buttons and forms update the page without a full reload. All the styling is in [static/app.css](static/app.css).
+- **Sharing** from another app opens `/share`, which saves the first web address it finds. The app icons in `static/` are drawn from the mark in `static/icon.svg` by `go run tools/icons.go`.
 - **Data** is one SQLite file ([db.go](db.go), [store.go](store.go)), with full-text search over everything you've read.
 
 ## License

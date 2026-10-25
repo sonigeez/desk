@@ -5,6 +5,7 @@ import (
 	"embed"
 	"html/template"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"time"
@@ -49,6 +50,7 @@ func main() {
 }
 
 func (a *App) routes() http.Handler {
+	mime.AddExtensionType(".webmanifest", "application/manifest+json")
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(assets))
 	mux.HandleFunc("GET /login", a.loginPage)
@@ -57,6 +59,7 @@ func (a *App) routes() http.Handler {
 
 	mux.HandleFunc("GET /{$}", a.desk)
 	mux.HandleFunc("POST /items", a.saveItem)
+	mux.HandleFunc("GET /share", a.share)
 	mux.HandleFunc("POST /items/{id}/top", a.itemAction)
 	mux.HandleFunc("POST /items/{id}/keep", a.itemAction)
 	mux.HandleFunc("POST /items/{id}/drop", a.itemAction)
