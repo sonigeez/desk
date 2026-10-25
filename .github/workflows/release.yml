@@ -1,17 +1,38 @@
-# Tag a version (git tag v0.1.0 && git push --tags) to publish binaries on GitHub Releases
-# and a container image at ghcr.io/sonigeez/desk.
+# Publish a release: Actions tab → Release → Run workflow, or
+#   gh workflow run release.yml -f version=v0.1.3
+# It tags the current main, puts binaries on GitHub Releases and pushes a container image to
+# ghcr.io/sonigeez/desk. Releases run from main (not from a tag) so each one can reuse the
+# build caches the previous release saved; GitHub doesn't share caches between tags.
 name: Release
 
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, like v0.1.3"
+        required: true
 
 permissions:
   contents: write
   packages: write
 
+env:
+  VERSION: ${{ inputs.version }}
+
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then echo "::error::Run releases from main."; exit 1; fi
+          if ! echo "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then echo "::error::Use a version like v0.1.3, not \"$VERSION\"."; exit 1; fi
+          if gh release view "$VERSION" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then echo "::error::$VERSION is already released."; exit 1; fi
+
   binaries:
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -23,7 +44,7 @@ jobs:
           mkdir dist
           for target in darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64; do
             os=${target%/*}; arch=${target#*/}
-            name=desk-${GITHUB_REF_NAME}-${os}-${arch}
+            name=desk-${VERSION}-${os}-${arch}
             ext=""; [ "$os" = windows ] && ext=.exe
             CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -ldflags="-s -w" -o "$name/desk$ext" .
             cp README.md LICENSE "$name/"
@@ -32,9 +53,10 @@ jobs:
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes
+        run: gh release create "$VERSION" dist/* --target "$GITHUB_SHA" --generate-notes
 
   image:
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -50,7 +72,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            ghcr.io/${{ github.repository }}:${{ inputs.version }}
             ghcr.io/${{ github.repository }}:latest
           # Reuse unchanged layers (like the Go module download) from the last release.
           cache-from: type=gha
