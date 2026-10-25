@@ -593,6 +593,7 @@ a.post-title:hover { text-decoration: underline; text-decoration-color: var(--li
 .book-card .kind-switch .link { font-weight: 600; text-decoration: underline; text-decoration-color: var(--gilt); text-underline-offset: 3px; min-height: 0; }
 .book-card .kind-switch.quiet { opacity: 0.8; font-size: 0.8125rem; }
 .book-card .kind-switch.quiet .link { font-weight: 500; }
+.reader-notice { max-width: 680px; margin-top: 18px; }
 
 /* ---- offline ---- */
 /* a small gilt dot on the spine of a book that opens with no connection */
