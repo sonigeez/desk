@@ -178,8 +178,7 @@ kbd {
   background: var(--surface); border: 1px solid var(--line); box-shadow: 0 18px 40px -20px var(--shadow);
 }
 .save-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
-.site-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--ink-2); white-space: nowrap; min-height: var(--tap); cursor: pointer; }
-.site-toggle input, .check input, .opt input { accent-color: var(--accent); width: 16px; height: 16px; }
+.check input, .opt input { accent-color: var(--accent); width: 16px; height: 16px; }
 .page { max-width: var(--measure); margin: 0 auto; padding-block: 32px 56px; }
 .foot {
   max-width: var(--measure); margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
@@ -592,3 +591,5 @@ a.post-title:hover { text-decoration: underline; text-decoration-color: var(--li
 .day-stats dd { margin: 0; font: 700 1.35rem/1.15 var(--sans); letter-spacing: -0.02em; }
 .book-card .kind-switch { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; font-size: 0.9rem; }
 .book-card .kind-switch .link { font-weight: 600; text-decoration: underline; text-decoration-color: var(--gilt); text-underline-offset: 3px; min-height: 0; }
+.book-card .kind-switch.quiet { opacity: 0.8; font-size: 0.8125rem; }
+.book-card .kind-switch.quiet .link { font-weight: 500; }

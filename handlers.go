@@ -377,15 +377,19 @@ func (a *App) saveItem(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/?error="+url.QueryEscape("Couldn't save: "+err.Error()+"."), http.StatusSeeOther)
 		return
 	}
-	kind := "article"
-	if r.FormValue("kind") == "site" {
-		kind = "site"
-	}
-	if _, err := a.addItem(u, kind, "", 0); err != nil {
+	if _, err := a.addItem(u, guessKind(u), "", 0); err != nil {
 		fail(w, err)
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// guessKind treats a site's home page as a whole site to read through, and anything deeper as an article.
+func guessKind(link string) string {
+	if u, err := url.Parse(link); err == nil && strings.Trim(u.Path, "/") == "" && u.RawQuery == "" {
+		return "site"
+	}
+	return "article"
 }
 
 func (a *App) itemAction(w http.ResponseWriter, r *http.Request) {
@@ -406,6 +410,8 @@ func (a *App) itemAction(w http.ResponseWriter, r *http.Request) {
 		if _, err = a.db.Exec(`UPDATE items SET kind = 'article', note = '', fetch_state = 'pending' WHERE id = ?`, id); err == nil {
 			go a.fetchItem(id)
 		}
+	case "site":
+		_, err = a.db.Exec(`UPDATE items SET kind = 'site', minutes = 0 WHERE id = ?`, id)
 	case "refetch":
 		if _, err = a.db.Exec(`UPDATE items SET fetch_state = 'pending' WHERE id = ?`, id); err == nil {
 			go a.fetchItem(id)

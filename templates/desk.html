@@ -60,6 +60,9 @@
           </form>
           <form class="kind-switch" method="post" action="/items/{{$it.ID}}/article"><span>Saved as a whole site.</span> <button class="link">It's one article, read it here</button></form>
           {{end}}
+          {{if and (eq $it.Kind "article") (not $failed)}}
+          <form class="kind-switch quiet" method="post" action="/items/{{$it.ID}}/site"><span>Reading a whole site through?</span> <button class="link">Keep it as a site</button></form>
+          {{end}}
           <div class="actions">
             {{if or (eq $it.Kind "site") $failed}}<a class="btn read-link" href="{{$it.URL}}" target="_blank" rel="noopener">{{if eq $it.Kind "site"}}Open site{{else}}Open the original{{end}} {{template "i-out"}}</a>
             {{else}}<a class="btn read-link" href="/read/{{$it.ID}}">{{if gt $it.Scroll 0.02}}Continue reading{{else}}Read now{{end}}</a>{{end}}
