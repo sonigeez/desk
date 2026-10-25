@@ -64,6 +64,7 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("POST /items/{id}/note", a.itemAction)
 	mux.HandleFunc("POST /items/{id}/scroll", a.itemAction)
 	mux.HandleFunc("POST /items/{id}/refetch", a.itemAction)
+	mux.HandleFunc("POST /items/{id}/article", a.itemAction)
 	mux.HandleFunc("POST /items/{id}/read", a.markRead)
 	mux.HandleFunc("GET /read/{id}", a.reader)
 

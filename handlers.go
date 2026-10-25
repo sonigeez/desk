@@ -401,6 +401,11 @@ func (a *App) itemAction(w http.ResponseWriter, r *http.Request) {
 			backWith(w, r, "gone", strconv.FormatInt(id, 10))
 			return
 		}
+	case "article":
+		// Saved as a whole site by mistake: make it an article and fetch it again for its reading time.
+		if _, err = a.db.Exec(`UPDATE items SET kind = 'article', note = '', fetch_state = 'pending' WHERE id = ?`, id); err == nil {
+			go a.fetchItem(id)
+		}
 	case "refetch":
 		if _, err = a.db.Exec(`UPDATE items SET fetch_state = 'pending' WHERE id = ?`, id); err == nil {
 			go a.fetchItem(id)
