@@ -1,6 +1,6 @@
 {{define "content"}}{{with .D}}{{$s := .Source}}
 <div class="narrow wide-ish">
-  <a class="back" href="/">{{template "i-back"}}Desk</a>
+  <a class="back" href="/wire">{{template "i-back"}}Wire</a>
   <header class="source-head">
     <p class="meta"><a href="{{$s.SiteURL}}" target="_blank" rel="noopener">{{host $s.SiteURL}} {{template "i-out"}}</a> · {{if $s.FeedURL}}feed{{else}}watching the page, no feed{{end}}</p>
     <h1 class="display">{{$s.Name}}</h1>

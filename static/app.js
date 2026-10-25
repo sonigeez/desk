@@ -6,6 +6,31 @@ document.addEventListener("htmx:pushedIntoHistory", () => {
   lastPath = location.pathname;
 });
 
+// ---- feeling like an app ----
+
+// Page changes crossfade where the browser can (View Transitions); elsewhere, and with reduced motion, they just swap.
+htmx.config.globalViewTransitions = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Opening a piece from the stack carries its title over into the reader's heading (named "piece" in app.css).
+document.addEventListener("click", (e) => {
+  if (!e.target.closest('a[href^="/read/"]')) return;
+  const title = e.target.closest(".book, .continue")?.querySelector(".spine-title, .continue-title");
+  if (!title) return;
+  document.querySelectorAll(".spine-title, .continue-title").forEach((t) => { t.style.viewTransitionName = ""; });
+  title.style.viewTransitionName = "piece";
+});
+
+// The tab bar (installed on a phone) moves to the tapped place at once, not when the page arrives.
+document.addEventListener("click", (e) => {
+  const tab = e.target.closest(".tabs a");
+  if (!tab) return;
+  document.querySelectorAll(".tabs [aria-current]").forEach((t) => t.removeAttribute("aria-current"));
+  tab.setAttribute("aria-current", "page");
+});
+
+// iOS only shows :active (the pressed look in app.css) on pages that listen for touches.
+document.addEventListener("touchstart", () => {}, { passive: true });
+
 // ---- reader: progress bar, minutes left, remembered place, text size ----
 
 let saveTimer = null;
