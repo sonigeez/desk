@@ -2,9 +2,9 @@
 <div class="login">
   <p class="wordmark">Desk</p>
   <form method="post" action="/login" hx-boost="false">
+    <input type="hidden" name="next" value="{{.D.Next}}">
     <label class="field-label" for="password">Password</label>
     <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
-    <input type="hidden" name="next" value="{{.D.Next}}">
     {{if .D.Error}}<p class="error">{{.D.Error}}</p>{{end}}
     <button class="btn big">Sign in</button>
   </form>
