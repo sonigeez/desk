@@ -33,13 +33,16 @@ type offlinePiece struct {
 	Site    string  `json:"site"`
 	Minutes int     `json:"minutes"`
 	Scroll  float64 `json:"scroll"`
-	Size    int     `json:"size"` // changes when the text is fetched again
+	Size    int     `json:"size"`  // changes when the text is fetched again
+	Marks   string  `json:"marks"` // changes when a highlight or note is added, edited or removed
 }
 
 // offlineList tells the service worker which reader pages to keep. It sits behind the sign-in,
 // so a signed-out phone gets the login page here and keeps nothing.
 func (a *App) offlineList(w http.ResponseWriter, r *http.Request) {
-	rows, err := a.db.Query(`SELECT id, title, site, minutes, scroll, length(content_html) FROM items
+	rows, err := a.db.Query(`SELECT id, title, site, minutes, scroll, length(content_html),
+		(SELECT COUNT(*) || ':' || COALESCE(MAX(id), 0) || ':' || COALESCE(SUM(length(note)), 0) FROM highlights WHERE item_id = items.id)
+		FROM items
 		WHERE status = 'stack' AND kept_at >= ? AND kind = 'article' AND fetch_state = 'ok'
 		ORDER BY position DESC LIMIT ?`, dustCutoff(), offlineLimit)
 	if err != nil {
@@ -50,7 +53,7 @@ func (a *App) offlineList(w http.ResponseWriter, r *http.Request) {
 	out := []offlinePiece{}
 	for rows.Next() {
 		var p offlinePiece
-		if err := rows.Scan(&p.ID, &p.Title, &p.Site, &p.Minutes, &p.Scroll, &p.Size); err != nil {
+		if err := rows.Scan(&p.ID, &p.Title, &p.Site, &p.Minutes, &p.Scroll, &p.Size, &p.Marks); err != nil {
 			fail(w, err)
 			return
 		}

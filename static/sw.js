@@ -6,7 +6,7 @@
 const CACHE = "desk-offline";
 const META = "/__offline/meta"; // {at, pieces: [piece]}: when the copy was made and what's in it, top of the stack first
 const PENDING = "/__offline/scroll/"; // reading positions saved while offline, sent on the next sync
-const SHELL = ["/offline", "/static/app.css", "/static/app.js", "/static/htmx.min.js", "/static/icon.svg"];
+const SHELL = ["/offline", "/static/app.css", "/static/app.js", "/static/htmx.min.js", "/static/highlights.js", "/static/icon.svg"];
 const WAIT = 5000; // how long to wait for Desk before using the copy
 const FONTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
 
@@ -49,7 +49,9 @@ async function refresh() {
   const cache = await caches.open(CACHE);
   await sendPending(cache);
 
+  // Only what's missing: asset() keeps the copies fresh whenever they're loaded online.
   for (const url of SHELL) {
+    if (await cache.match(url)) continue;
     const r = await fetch(url, { cache: "no-cache" });
     if (gen !== generation) return;
     if (r.ok && !r.redirected) await cache.put(url, r);
@@ -109,9 +111,9 @@ self.addEventListener("fetch", (e) => {
 });
 
 // race waits for Desk, but not forever: a sleeping Mac never says no, it just doesn't answer.
-function race(req) {
+function race(req, wait = WAIT) {
   return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("timeout")), WAIT);
+    const t = setTimeout(() => reject(new Error("timeout")), wait);
     fetch(req).then(resolve, reject).finally(() => clearTimeout(t));
   });
 }
@@ -121,7 +123,8 @@ async function pageFor(req, url) {
   const reader = /^\/read\/\d+$/.test(url.pathname);
   const copy = reader ? await cache.match(url.pathname) : null;
   try {
-    const res = await race(req);
+    // A slow page with no copy gets longer before it's taken for a sleeping Mac.
+    const res = await race(req, copy ? WAIT : 3 * WAIT);
     // Opening a kept piece while online refreshes its copy (not a session view, which differs).
     if (copy && res.ok && !res.redirected && !url.search) cache.put(url.pathname, res.clone());
     return res;
@@ -133,17 +136,19 @@ async function pageFor(req, url) {
   }
 }
 
-// Static files come from the copy when there is one, and the copy is refreshed in the background.
+// Static files come from Desk when it answers, so a deploy's new CSS and JS arrive at once,
+// and from the copy when it doesn't.
 async function asset(req, url) {
   const cache = await caches.open(CACHE);
-  const copy = await cache.match(url.pathname);
-  const fresh = fetch(req).then((res) => {
-    if (copy && res.ok) cache.put(url.pathname, res.clone());
+  try {
+    const res = await race(req);
+    if (res.ok && (await cache.match(url.pathname))) cache.put(url.pathname, res.clone());
     return res;
-  });
-  if (!copy) return fresh;
-  fresh.catch(() => {});
-  return copy;
+  } catch (err) {
+    const copy = await cache.match(url.pathname);
+    if (!copy) throw err;
+    return copy;
+  }
 }
 
 // Fonts never change at a given address, so a copy is good forever. Only kept while signed in.
@@ -152,7 +157,7 @@ async function font(req) {
   const copy = await cache.match(req);
   if (copy) return copy;
   const res = await fetch(req);
-  if ((res.ok || res.type === "opaque") && (await cache.match(META))) cache.put(req, res.clone());
+  if (res.ok && (await cache.match(META))) cache.put(req, res.clone());
   return res;
 }
 
