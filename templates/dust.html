@@ -1,0 +1,20 @@
+{{define "content"}}{{with .D}}
+<div class="narrow dust">
+  <a class="back" href="/">{{template "i-back"}}Desk</a>
+  {{with .Gone}}<div class="notice" role="status"><span>Let go of “{{.Title}}”.</span><form method="post" action="/items/{{.ID}}/unread"><button class="link">Undo</button></form></div>{{end}}
+  {{if .Items}}{{$it := index .Items 0}}
+  <p class="meta">{{len .Items}} left to review</p>
+  <div class="dust-book" style="--cloth:var(--{{cloth $it.URL}})"><span>{{$it.Title}}</span></div>
+  <p class="lede">Saved {{ago $it.KeptAt}} from {{$it.Site}}{{if $it.Minutes}}, a {{mins $it.Minutes}} read{{end}}.</p>
+  {{if and $it.Excerpt (ne $it.Excerpt $it.Title)}}<p class="excerpt">{{$it.Excerpt}}</p>{{end}}
+  <h2 class="time-q">Still want to read this?</h2>
+  <div class="actions">
+    <form method="post" action="/items/{{$it.ID}}/keep"><button class="btn big">Keep it, put it on top</button></form>
+    <form method="post" action="/items/{{$it.ID}}/drop"><button class="btn ghost big">Let it go</button></form>
+  </div>
+  {{else}}
+  <h1 class="display">All clear</h1>
+  <p class="lede">Nothing is gathering dust. Anything left unread for 60 days will show up here.</p>
+  {{end}}
+</div>
+{{end}}{{end}}

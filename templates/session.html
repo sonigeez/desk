@@ -1,0 +1,25 @@
+{{define "content"}}{{with .D}}
+<div class="narrow">
+  <a class="back" href="/?min={{.Budget}}">{{template "i-back"}}Desk</a>
+  <h1 class="display">Your {{if eq .Budget 60}}hour{{else}}{{.Budget}} minutes{{end}}</h1>
+  <nav class="chips" aria-label="Reading time">
+    <a class="chip" href="/session?min=15" {{if eq .Budget 15}}aria-current="true"{{end}}>15 min</a>
+    <a class="chip" href="/session?min=30" {{if eq .Budget 30}}aria-current="true"{{end}}>30 min</a>
+    <a class="chip" href="/session?min=60" {{if eq .Budget 60}}aria-current="true"{{end}}>1 hour</a>
+  </nav>
+  {{if .Picks}}
+  <ol class="queue">
+    {{range $i, $it := .Picks}}
+    <li>
+      <span class="queue-n">{{inc $i}}</span>
+      <div class="book static" style="{{bookStyle $it $i}}"><div class="spine"><span class="spine-title">{{$it.Title}}</span><span class="spine-meta">{{$it.Minutes}} min</span></div></div>
+    </li>
+    {{end}}
+  </ol>
+  <p class="meta">{{mins .Used}} planned · {{mins (sub .Budget .Used)}} spare · taken from the top of your stack</p>
+  <a class="btn big" href="/read/{{(index .Picks 0).ID}}?s={{.IDs}}">Begin</a>
+  {{else}}
+  <p class="note">Nothing on your stack fits in {{.Budget}} minutes. Try a longer slot, or add something short.</p>
+  {{end}}
+</div>
+{{end}}{{end}}

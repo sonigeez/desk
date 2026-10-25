@@ -1,0 +1,41 @@
+{{define "content"}}{{with .D}}
+<div class="narrow">
+  {{if not .Preview}}
+  <h1 class="display">Whose writing do you want to keep up with?</h1>
+  <form class="find" method="post" action="/follow/find" hx-disabled-elt="find button" hx-indicator="#finding" hx-push-url="/follow">
+    <label class="visually-hidden" for="follow-url">Blog address</label>
+    <input id="follow-url" name="url" type="text" inputmode="url" value="{{.URL}}" placeholder="theirblog.com" autocomplete="off" required autofocus>
+    <button class="btn">Find</button>
+  </form>
+  <p class="meta htmx-indicator" id="finding">Looking for a feed. This can take a few seconds.</p>
+  {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+  <p class="note">The home page is enough. The app looks for the blog's feed, and if there isn't one it watches the page for new links instead.</p>
+  {{else}}{{with .Preview}}
+  <a class="back" href="/follow">{{template "i-back"}}A different blog</a>
+  <h1 class="display">{{.Name}}</h1>
+  <div class="found">
+    <p class="meta">{{if .FeedURL}}Found a feed · {{host .FeedURL}}{{else}}No feed found · the app will watch {{host .SiteURL}} for new links{{end}}{{if .Every}} · posts about {{every .Every}}{{end}}</p>
+    {{if .Posts}}
+    <ul class="posts compact">
+      {{range .Posts}}<li><span class="post-title">{{.Title}}</span><span class="meta">{{if $.D.Preview.FeedURL}}{{ago .Published}}{{end}}{{if .Minutes}} · {{mins .Minutes}}{{end}}</span></li>{{end}}
+    </ul>
+    {{else}}
+    <p class="note">No posts to show yet.</p>
+    {{end}}
+  </div>
+  <form class="follow-form" method="post" action="/follow">
+    <input type="hidden" name="site_url" value="{{.SiteURL}}">
+    <input type="hidden" name="feed_url" value="{{.FeedURL}}">
+    <label for="name" class="field-label">Call it</label>
+    <input id="name" name="name" type="text" value="{{.Name}}">
+    <fieldset class="choice">
+      <legend class="field-label">When they publish</legend>
+      <label class="opt"><input type="radio" name="mode" value="tell" checked><b>Tell me</b><span>New posts wait on the Wire for you to add or skip.</span></label>
+      <label class="opt"><input type="radio" name="mode" value="auto"><b>Add everything</b><span>New posts go straight onto the stack.</span></label>
+    </fieldset>
+    {{if .Posts}}<label class="check"><input type="checkbox" name="backfill"> Also put their 3 latest posts on my stack</label>{{end}}
+    <button class="btn big">Follow {{.Name}}</button>
+  </form>
+  {{end}}{{end}}
+</div>
+{{end}}{{end}}

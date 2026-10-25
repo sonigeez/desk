@@ -1,0 +1,11 @@
+# build output and your reading data
+/desk
+/desk-check
+/data/
+
+# local tooling, kept out of the repo
+/.claude/skills/
+/.claude/agents/
+/.claude/settings.local.json
+/.impeccable/
+.DS_Store

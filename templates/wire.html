@@ -1,0 +1,64 @@
+{{define "content"}}{{with .D}}
+<div class="narrow">
+  <header class="wire-head">
+    <h1 class="display">The Wire</h1>
+    <form method="post" action="/wire/collect" class="collect" hx-disabled-elt="find button" hx-indicator="#collecting">
+      <span class="meta">{{if .Fresh}}{{len .Fresh}} {{if eq (len .Fresh) 1}}letter{{else}}letters{{end}} · {{end}}{{if .LastCollected}}last collection {{since .LastCollected}}{{else}}not collected yet{{end}}<span class="htmx-indicator" id="collecting"> · collecting…</span></span>
+      {{if .Sources}}<button class="link">Collect now</button>{{end}}
+    </form>
+  </header>
+  {{with .Skipped}}<div class="notice" role="status"><span>Skipped “{{.Title}}”.</span><form method="post" action="/posts/{{.ID}}/unskip"><button class="link">Undo</button></form></div>{{end}}
+
+  {{if .Fresh}}
+  <ol class="letters">
+    {{range .Fresh}}
+    <li class="letter{{if recent .PublishedAt}} is-recent{{else if faded .PublishedAt}} is-faded{{end}}">
+      <svg class="postmark" viewBox="0 0 120 76" aria-hidden="true">
+        <defs><path id="rim-{{.ID}}" d="M 19.6 56.4 A 26 26 0 1 1 56.4 56.4"></path></defs>
+        <circle class="ring" cx="38" cy="38" r="33"></circle>
+        <circle cx="38" cy="38" r="20"></circle>
+        <text class="rim"><textPath href="#rim-{{.ID}}" startOffset="50%" text-anchor="middle">{{upper (host .URL)}}</textPath></text>
+        <text class="day" x="38" y="{{if recent .PublishedAt}}37{{else}}41{{end}}" text-anchor="middle">{{postday .PublishedAt}}</text>
+        {{if recent .PublishedAt}}<text class="when" x="38" y="47" text-anchor="middle">{{upper (since .PublishedAt)}}</text>{{end}}
+        {{if not (faded .PublishedAt)}}<path class="waves" d="M 74 26 q 6 -5 12 0 t 12 0 t 12 0 M 74 34 q 6 -5 12 0 t 12 0 t 12 0 M 74 42 q 6 -5 12 0 t 12 0 t 12 0 M 74 50 q 6 -5 12 0 t 12 0 t 12 0"></path>{{end}}
+      </svg>
+      <div class="slip">
+        <a class="fresh-title" href="{{.URL}}" target="_blank" rel="noopener">{{.Title}}</a>
+        <span class="meta">{{.SourceName}}{{if .Minutes}} · {{mins .Minutes}}{{end}}{{if faded .PublishedAt}} · arrived {{ago .PublishedAt}}{{end}}</span>
+        <span class="actions">
+          <form method="post" action="/posts/{{.ID}}/add"><button class="link">Add to stack</button></form>
+          <form method="post" action="/posts/{{.ID}}/skip"><button class="link muted">Skip</button></form>
+        </span>
+      </div>
+    </li>
+    {{end}}
+  </ol>
+  {{else}}
+  <div class="no-post">
+    <svg class="tray" viewBox="0 0 150 96" aria-hidden="true">
+      <path d="M 10 40 L 30 84 L 120 84 L 140 40" stroke-width="1.6" stroke-linejoin="round"></path>
+      <path d="M 18 58 L 132 58 M 24 71 L 126 71" stroke-width="1"></path>
+      <path d="M 30 84 L 26 92 M 120 84 L 124 92" stroke-width="1.6" stroke-linecap="round"></path>
+      <path class="dash" d="M 52 30 q 10 -14 22 -4 t 24 -6" stroke-width="1.2"></path>
+    </svg>
+    <div>
+      <h2>No post today.</h2>
+      <p class="lede">{{if .Sources}}Nothing new from the {{len .Sources}} {{if eq (len .Sources) 1}}writer{{else}}writers{{end}} you follow. New letters land here the hour they're published.{{else}}Follow a few blogs and their new posts will land here as letters.{{end}}</p>
+    </div>
+  </div>
+  {{end}}
+
+  <h2 class="pigeon-head">Pigeonholes</h2>
+  <ul class="pigeonholes">
+    {{range .Sources}}
+    <li><a class="hole{{if .NewCount}} has-post{{end}}" href="/sources/{{.ID}}">
+      {{if .NewCount}}<span class="badge">{{.NewCount}} new</span>{{end}}
+      <span class="hole-name">{{.Name}}</span>
+      <span class="meta">{{if .CheckError}}<em class="warn">couldn't check</em>{{else if .Quiet}}<em class="quiet">quieter than usual</em> · {{ago .LastPost}}{{else if .Every}}{{every .Every}} · {{ago .LastPost}}{{else if .LastPost}}{{ago .LastPost}}{{else}}no posts yet{{end}}</span>
+      <span class="visually-hidden">Posted in {{.ActiveWeeks}} of the last 26 weeks.</span>
+    </a></li>
+    {{end}}
+    <li><a class="hole add" href="/follow"><span class="plus" aria-hidden="true">+</span><span>Follow a blog</span></a></li>
+  </ul>
+</div>
+{{end}}{{end}}

@@ -1,0 +1,90 @@
+{{define "content"}}{{with .D}}
+<div class="desk" id="desk">
+  <h1 class="visually-hidden">Your stack</h1>
+  {{with .Gone}}<div class="notice" role="status"><span>Let go of “{{.Title}}”.</span><form method="post" action="/items/{{.ID}}/unread"><button class="link">Undo</button></form></div>{{end}}
+  {{with .Done}}<div class="notice" role="status"><span>“{{.Title}}” is on your shelf.</span><form method="post" action="/items/{{.ID}}/unread"><button class="link">Undo</button></form></div>{{end}}
+  {{if .Error}}<p class="error" role="alert">{{.Error}}</p>{{end}}
+
+  {{with .Continue}}
+  <a class="continue" href="/read/{{.ID}}">
+    <span class="meta">Continue</span>
+    <span class="continue-title">{{.Title}}</span>
+    <span class="continue-bar" aria-hidden="true"><i style="width: {{pct .Scroll}}%"></i></span>
+    <span class="meta nowrap">{{minsLeft .}} min left</span>
+  </a>
+  {{end}}
+
+  {{if .Stack}}
+  <div class="stack-bar">
+    <span class="meta">{{len .Stack}} {{if eq (len .Stack) 1}}piece{{else}}pieces{{end}}{{if .Total}} · {{mins .Total}}{{end}}</span>
+    <nav class="timepick" aria-label="Pick what to read">
+      <a href="/surprise">Surprise me</a> ·
+      <span>Only have</span>
+      <a href="/?min=15" {{if eq .Budget 15}}aria-current="true"{{end}}>15</a> ·
+      <a href="/?min=30" {{if eq .Budget 30}}aria-current="true"{{end}}>30</a> ·
+      <a href="/?min=60" {{if eq .Budget 60}}aria-current="true"{{end}}>60 min</a>
+      {{if .Budget}}<a class="clear" href="/">clear</a>{{end}}
+    </nav>
+  </div>
+  {{if .Budget}}
+  <div class="plan">
+    {{if .PickCount}}
+    <span><b>{{.PickCount}} {{if eq .PickCount 1}}piece{{else}}pieces{{end}} · {{mins .PickMinutes}}</b> <span class="nowrap">fit, each with a ribbon <i class="ribbon-key" aria-hidden="true"></i></span></span>
+    <a class="btn" href="/session?min={{.Budget}}">Start reading</a>
+    {{else}}
+    <span>Nothing on your stack fits in {{mins .Budget}}.</span>
+    {{end}}
+  </div>
+  {{end}}
+  {{end}}
+
+  {{if .Stack}}
+  <ol class="stack{{if .Budget}} planning{{end}}" id="stack" aria-label="The stack, {{len .Stack}} {{if eq (len .Stack) 1}}piece{{else}}pieces{{end}}{{if .Total}}, {{mins .Total}}{{end}}">
+    {{range $i, $it := .Stack}}{{$picked := index $.D.Picked $it.ID}}{{$failed := eq $it.FetchState "failed"}}
+    <li class="book{{if $picked}} picked{{end}}{{if $failed}} failed{{end}}" style="{{bookStyle $it $i}}">
+      <details name="book" {{if and (eq $i 0) (not $.D.Budget)}}open{{end}}>
+        <summary>
+          <span class="spine-title">{{if eq $it.FetchState "pending"}}Fetching {{$it.Site}}…{{else}}{{$it.Title}}{{end}}</span>{{if $picked}}<span class="visually-hidden">: fits your time</span>{{end}}
+          <span class="spine-meta">{{if $failed}}no text{{else if eq $it.Kind "site"}}{{if $it.Note}}{{$it.Note}}{{else}}site{{end}}{{else if started $it}}{{minsLeft $it}} min left{{else if $it.Minutes}}{{$it.Minutes}} min{{end}}</span>
+          {{if started $it}}<span class="read-line" style="width: calc((100% - 48px) * {{pct $it.Scroll}} / 100)" aria-hidden="true"></span>{{end}}
+        </summary>
+        <div class="book-card">
+          <p class="meta">{{$it.Site}} · saved {{ago $it.SavedAt}}{{if and (gt $it.Scroll 0.02) (not $failed)}} · {{pct $it.Scroll}}% read{{end}}{{if $it.SourceID}} · from a blog you follow{{end}}</p>
+          {{if and $it.Excerpt (ne $it.Excerpt $it.Title)}}<p class="excerpt">{{$it.Excerpt}}</p>{{end}}
+          {{if $failed}}<div class="problem"><span>The page couldn't be fetched, so there's no saved text.</span><form method="post" action="/items/{{$it.ID}}/refetch"><button class="link">Try fetching again</button></form></div>{{end}}
+          {{if eq $it.Kind "site"}}
+          <form class="note-form" method="post" action="/items/{{$it.ID}}/note">
+            <label for="note-{{$it.ID}}">Where you're up to</label>
+            <input id="note-{{$it.ID}}" name="note" type="text" value="{{$it.Note}}" placeholder="e.g. chapter 8">
+            <button class="btn ghost">Save note</button>
+          </form>
+          {{end}}
+          <div class="actions">
+            {{if or (eq $it.Kind "site") $failed}}<a class="btn read-link" href="{{$it.URL}}" target="_blank" rel="noopener">{{if eq $it.Kind "site"}}Open site{{else}}Open the original{{end}} {{template "i-out"}}</a>
+            {{else}}<a class="btn read-link" href="/read/{{$it.ID}}">{{if gt $it.Scroll 0.02}}Continue reading{{else}}Read now{{end}}</a>{{end}}
+            {{if not $failed}}
+            <form method="post" action="/items/{{$it.ID}}/read"><button class="link muted">{{if eq $it.Kind "site"}}Finished{{else}}Mark read{{end}}</button></form>
+            {{if $i}}<form method="post" action="/items/{{$it.ID}}/top"><button class="link muted">Move to top</button></form>{{end}}
+            {{end}}
+            <form class="let-go" method="post" action="/items/{{$it.ID}}/drop"><button class="link muted">Let go</button></form>
+          </div>
+        </div>
+      </details>
+    </li>
+    {{end}}
+  </ol>
+  {{else}}
+  <p class="lede">Your stack is empty. Save a link with the button at the top, or add posts from the Wire.</p>
+  {{end}}
+
+  {{if .Dust}}
+  <a class="dustbar" href="/dust"><span>{{if eq (len .Dust) 1}}“{{(index .Dust 0).Title}}” has been gathering dust{{else}}{{len .Dust}} pieces are gathering dust{{end}}</span><span class="link">Review</span></a>
+  {{end}}
+  {{if $.WireNew}}
+  <a class="wire-link" href="/wire"><span><b>{{$.WireNew}} new {{if eq $.WireNew 1}}post{{else}}posts{{end}}</b> on the Wire</span>{{template "i-next"}}</a>
+  {{end}}
+
+  {{if .Pending}}<div hx-get="{{.Self}}" hx-trigger="load delay:2s" hx-select="#desk" hx-target="#desk" hx-swap="outerHTML" hx-select-oob="#fetch-status"></div>{{end}}
+</div>
+<p id="fetch-status" class="visually-hidden" role="status">{{if .Pending}}Fetching a saved link.{{else}}All saved links are ready to read.{{end}}</p>
+{{end}}{{end}}

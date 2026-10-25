@@ -1,0 +1,36 @@
+{{define "content"}}{{with .D}}
+<header class="col-head wide"><h1 class="display">Shelf</h1><span class="meta">{{.Count}} read · {{mins .Minutes}}</span></header>
+<form class="search" method="get" action="/shelf">
+  <label class="visually-hidden" for="q">Search what you've read</label>
+  <input id="q" name="q" type="search" value="{{.Q}}" placeholder="Search everything you've read" autocomplete="off">
+</form>
+{{if and (not .Q) .Year.DaysRead}}
+<section class="days" aria-labelledby="days-h">
+  <div class="days-head"><h2 id="days-h">Day by day</h2><span class="meta">the last six months, one spine a day</span></div>
+  <p class="visually-hidden">You read on {{.Year.DaysRead}} days in the last six months, {{mins .Year.Minutes}} in all.</p>
+  {{range .Year.Shelves}}
+  <div class="day-shelf" aria-hidden="true">{{range .Days}}<span class="day{{if .Cloth}} read{{end}}" style="--h: {{.Height}}px{{if .Cloth}}; --cloth: var(--{{.Cloth}}){{end}}" title="{{.Label}}"></span>{{end}}</div>
+  <div class="day-dates" aria-hidden="true"><span>{{.From}}</span><span>{{.To}}</span></div>
+  {{end}}
+  <dl class="day-stats">
+    <div><dt>days with reading</dt><dd>{{.Year.DaysRead}}</dd></div>
+    <div><dt>read in all</dt><dd>{{mins .Year.Minutes}}</dd></div>
+    {{if .Year.BestDay}}<div><dt>your reading day</dt><dd>{{.Year.BestDay}}</dd></div>{{end}}
+  </dl>
+</section>
+{{end}}
+{{if .Weeks}}
+{{range .Weeks}}
+<section class="shelf-week">
+  <p class="meta">{{.Label}} · {{len .Items}} {{if eq (len .Items) 1}}piece{{else}}pieces{{end}} · {{mins .Minutes}}</p>
+  <div class="shelf">
+    {{range .Items}}<a class="spine-up" href="/read/{{.ID}}" style="{{spineStyle .}}" title="{{.Title}} · {{.Site}}"><span>{{.Title}}</span></a>{{end}}
+  </div>
+</section>
+{{end}}
+{{else if .Q}}
+<p class="note">Nothing you've read matches “{{.Q}}”.</p>
+{{else}}
+<p class="note">Nothing here yet. Finished pieces stand on this shelf, grouped by week.</p>
+{{end}}
+{{end}}{{end}}

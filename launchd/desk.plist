@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Starts Desk when you log in and restarts it if it stops. See README.md. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>local.desk</string>
+  <key>WorkingDirectory</key>
+  <string>/path/to/desk</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/path/to/desk/desk</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>DESK_PASSWORD</key>
+    <string>CHANGE-ME</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/path/to/desk/data/desk.log</string>
+  <key>StandardErrorPath</key>
+  <string>/path/to/desk/data/desk.log</string>
+</dict>
+</plist>

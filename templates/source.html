@@ -1,0 +1,56 @@
+{{define "content"}}{{with .D}}{{$s := .Source}}
+<div class="narrow wide-ish">
+  <a class="back" href="/">{{template "i-back"}}Desk</a>
+  <header class="source-head">
+    <p class="meta"><a href="{{$s.SiteURL}}" target="_blank" rel="noopener">{{host $s.SiteURL}} {{template "i-out"}}</a> · {{if $s.FeedURL}}feed{{else}}watching the page, no feed{{end}}</p>
+    <h1 class="display">{{$s.Name}}</h1>
+    <p class="lede">{{if $s.Quiet}}<em class="quiet">Quieter than usual.</em> Last post {{ago $s.LastPost}}; usually posts {{every $s.Every}}.{{else if $s.Every}}Posts about {{every $s.Every}}. Last one {{ago $s.LastPost}}.{{else if $s.LastPost}}Last post {{ago $s.LastPost}}.{{else}}No posts seen yet.{{end}}</p>
+  </header>
+
+  <div class="source-controls">
+    <form class="seg" method="post" action="/sources/{{$s.ID}}/mode" aria-label="When they publish">
+      <button name="mode" value="tell" aria-pressed="{{eq $s.Mode "tell"}}">Tell me</button>
+      <button name="mode" value="auto" aria-pressed="{{eq $s.Mode "auto"}}">Add everything</button>
+    </form>
+    <form class="check-now" method="post" action="/sources/{{$s.ID}}/check" hx-disabled-elt="find button" hx-indicator="#checking">
+      <span class="meta">{{if $s.CheckError}}<em class="warn">Last check failed: {{$s.CheckError}}</em>{{else}}Checked {{since $s.CheckedAt}}{{end}}<span class="htmx-indicator" id="checking"> · checking…</span></span>
+      <button class="btn ghost">Check now</button>
+    </form>
+  </div>
+
+  <figure class="year">
+    <span class="rhythm tall" aria-hidden="true">{{range $s.Weeks}}<i class="{{.}}"></i>{{end}}</span>
+    <figcaption class="months">{{range $s.Months}}<span>{{.}}</span>{{end}}</figcaption>
+  </figure>
+
+  <dl class="stats">
+    <div><dt>Last post</dt><dd>{{if $s.LastPost}}{{ago $s.LastPost}}{{else}}–{{end}}</dd></div>
+    <div><dt>Posts seen</dt><dd>{{$s.Total}}</dd></div>
+    <div><dt>Read by you</dt><dd>{{$s.Read}}</dd></div>
+  </dl>
+
+  <ul class="posts">
+    {{range .Posts}}
+    <li class="post s-{{.State}}">
+      <a class="post-title" href="{{.URL}}" target="_blank" rel="noopener">{{.Title}}</a>
+      <span class="post-side">
+        {{if eq .State "new"}}<span class="badge">new</span>{{end}}
+        {{if eq .State "stack"}}<span class="state">on stack</span>{{end}}
+        {{if eq .State "read"}}<span class="state ok">read</span>{{end}}
+        {{if eq .State "dropped"}}<span class="state">let go</span>{{end}}
+        {{if eq .State "skipped"}}<span class="state">skipped</span>{{end}}
+        {{if or (eq .State "new") (eq .State "old") (eq .State "skipped")}}<form method="post" action="/posts/{{.ID}}/add"><button class="link">Add</button></form>{{end}}
+        {{if eq .State "new"}}<form method="post" action="/posts/{{.ID}}/skip"><button class="link muted">Skip</button></form>{{end}}
+      </span>
+      <span class="meta">{{ago .PublishedAt}}{{if .Minutes}} · {{mins .Minutes}}{{end}}</span>
+    </li>
+    {{else}}
+    <li class="note">Nothing yet. New posts will appear here after the next check.</li>
+    {{end}}
+  </ul>
+
+  <form class="unfollow" method="post" action="/sources/{{$s.ID}}/unfollow" hx-confirm="Unfollow {{$s.Name}}? Pieces already on your stack stay there.">
+    <button class="link muted">Unfollow {{$s.Name}}</button>
+  </form>
+</div>
+{{end}}{{end}}

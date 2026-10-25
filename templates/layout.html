@@ -1,0 +1,59 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>{{if eq .Title "Desk"}}Desk{{else}}{{.Title}} · Desk{{end}}</title>
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/htmx.min.js" defer></script>
+<script src="/static/app.js" defer></script>
+</head>
+<body hx-boost="true">
+{{if .Nav}}
+<header class="masthead">
+  <a class="wordmark" href="/">
+    <svg class="mark" viewBox="0 0 28 22" aria-hidden="true">
+      <rect x="4" y="15" width="22" height="6" rx="1" fill="var(--c1)"/>
+      <rect x="1" y="8" width="23" height="6" rx="1" fill="var(--c2)"/>
+      <rect x="5" y="1" width="20" height="6" rx="1" fill="var(--c3)"/>
+      <path d="M7 16.5v3M9 16.5v3M4 9.5v3M6 9.5v3M8 2.5v3M10 2.5v3" stroke="var(--gilt)" stroke-width=".8"/>
+    </svg>
+    <span>Desk</span>
+  </a>
+  <nav class="nav" aria-label="Main">
+    <a href="/" {{if eq .Nav "desk"}}aria-current="page"{{end}}>Desk</a>
+    <a href="/wire" {{if eq .Nav "wire"}}aria-current="page"{{end}}>Wire{{if .WireNew}} <span class="count">{{.WireNew}}<span class="visually-hidden"> new</span></span>{{end}}</a>
+    <a href="/shelf" {{if eq .Nav "shelf"}}aria-current="page"{{end}}>Shelf</a>
+    <a href="/follow" {{if eq .Nav "follow"}}aria-current="page"{{end}}>Follow</a>
+  </nav>
+  <details class="save-menu">
+    <summary class="btn"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Save</summary>
+    <form class="save" method="post" action="/items">
+      <label class="field-label" for="save-url">Save a link to your stack</label>
+      <input id="save-url" name="url" type="text" inputmode="url" placeholder="Paste a link" autocomplete="off" required>
+      <div class="save-row">
+        <label class="site-toggle"><input type="checkbox" name="kind" value="site"> It's a whole site I'm reading through</label>
+        <button class="btn">Save</button>
+      </div>
+    </form>
+  </details>
+</header>
+{{end}}
+<main class="page">{{template "content" .}}</main>
+{{if .Nav}}
+<footer class="foot">
+  {{if eq .Title "Desk"}}<p class="keys">Keys: <kbd>J</kbd> <kbd>K</kbd> move through the stack, <kbd>R</kbd> reads, <kbd>/</kbd> saves a link, <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> pick a time, <kbd>Esc</kbd> closes.</p>{{else}}<span></span>{{end}}
+  {{if .Auth}}<form method="post" action="/logout"><button class="link muted">Sign out</button></form>{{end}}
+</footer>
+{{end}}
+</body>
+</html>{{end}}
+
+{{define "i-back"}}<svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}
+{{define "i-next"}}<svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}
+{{define "i-out"}}<svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5h6.5V10M12.5 3.5 4 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}

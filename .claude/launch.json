@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "desk",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "go build -o desk . && ./desk"],
+      "port": 8080
+    }
+  ]
+}

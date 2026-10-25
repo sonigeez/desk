@@ -1,0 +1,13 @@
+{{define "content"}}{{with .D}}
+<div class="narrow">
+  <h1 class="display">Session done</h1>
+  <p class="lede">{{len .Items}} {{if eq (len .Items) 1}}piece{{else}}pieces{{end}} · {{mins .Minutes}}. They're on your shelf now.</p>
+  <div class="mini-shelf">
+    {{range .Items}}<a class="spine-up" href="/read/{{.ID}}" style="{{spineStyle .}}" title="{{.Title}}"><span>{{.Title}}</span></a>{{end}}
+  </div>
+  <div class="actions">
+    <a class="btn" href="/">Back to the desk</a>
+    <a class="btn ghost" href="/shelf">See the shelf</a>
+  </div>
+</div>
+{{end}}{{end}}
