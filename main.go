@@ -60,6 +60,8 @@ func (a *App) routes() http.Handler {
 
 	mux.HandleFunc("GET /{$}", a.desk)
 	mux.HandleFunc("POST /items", a.saveItem)
+	mux.HandleFunc("GET /save", a.savePage)
+	mux.HandleFunc("POST /save", a.saveConfirmed)
 	mux.HandleFunc("GET /share", a.share)
 	mux.HandleFunc("POST /items/{id}/top", a.itemAction)
 	mux.HandleFunc("POST /items/{id}/keep", a.itemAction)
@@ -82,6 +84,7 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("GET /surprise", a.surprise)
 	mux.HandleFunc("GET /offline", a.offlinePage)
 	mux.HandleFunc("GET /offline.json", a.offlineList)
+	mux.HandleFunc("GET /search", a.searchResults)
 
 	mux.HandleFunc("GET /follow", a.followPage)
 	mux.HandleFunc("POST /follow/find", a.followFind)

@@ -1,0 +1,12 @@
+{{define "results"}}{{range $i, $s := .Sites}}
+<li class="finder-site" role="option" id="fr-s{{$i}}" data-site="{{$s.Host}}" aria-selected="false"><span class="meta">Only</span> <b>{{$s.Host}}</b>{{with $s.Name}} <span class="meta">{{.}}</span>{{end}}</li>
+{{end}}{{range .Hits}}
+<li role="option" id="fr-{{.ID}}" aria-selected="false" data-place="{{.Place}}">
+  <a class="finder-hit" tabindex="-1" {{if or (eq .Kind "site") (eq .FetchState "failed")}}href="{{.URL}}" target="_blank" rel="noopener"{{else}}href="/read/{{.ID}}"{{end}}>
+    <span class="swatch" style="--cloth:var(--{{cloth .URL}})" aria-hidden="true"></span>
+    <span class="finder-title">{{.TitleHL}}</span>
+    <span class="meta finder-meta">{{.Site}} · <span class="place">{{.Place}}</span>{{if eq .Kind "site"}} · whole site{{else if .Minutes}} · {{mins .Minutes}}{{end}}</span>
+    {{if .Snippet}}<span class="finder-snip">{{.Snippet}}</span>{{end}}
+  </a>
+</li>
+{{end}}{{end}}

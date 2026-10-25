@@ -73,7 +73,7 @@ document.addEventListener("click", (e) => {
 const timeKeys = { 1: 15, 2: 30, 3: 60 };
 
 document.addEventListener("keydown", (e) => {
-  if (e.metaKey || e.ctrlKey || e.altKey || e.target.closest("input, textarea, select")) return;
+  if (e.metaKey || e.ctrlKey || e.altKey || e.target.closest("input, textarea, select, dialog")) return;
   const stack = document.getElementById("stack");
   if (!stack) return;
   const key = e.key.toLowerCase();
@@ -124,7 +124,7 @@ document.addEventListener("toggle", (e) => {
 }, true);
 document.addEventListener("keydown", (e) => {
   const menu = document.querySelector(".save-menu[open]");
-  if (e.key === "Escape" && menu) { menu.open = false; menu.querySelector("summary").focus(); }
+  if (e.key === "Escape" && menu && !e.target.closest("dialog")) { menu.open = false; menu.querySelector("summary").focus(); }
 });
 
 // ---- offline: a service worker keeps the stack readable with no connection (see static/sw.js) ----
@@ -212,3 +212,171 @@ document.addEventListener("htmx:sendError", (e) => {
   clearTimeout(note.timer);
   note.timer = setTimeout(() => note.remove(), 6000);
 });
+
+// The bookmarklet is meant to be dragged to the bookmarks bar; clicking it here would only save Desk itself.
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".bookmarklet")) return;
+  e.preventDefault();
+  const hint = document.getElementById("bookmarklet-hint");
+  if (hint) hint.textContent = "Drag it to your bookmarks bar instead, then click it there when you're on a page you want to keep.";
+});
+
+// ---- search everything: Cmd+K (Ctrl+K elsewhere) from any page ----
+
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+let findTimer = null;
+let findAbort = null;
+let findReturn = null;
+let findDirty = false; // typed, but the results haven't caught up yet
+
+function finder() { return document.getElementById("finder"); }
+
+htmx.onLoad(() => {
+  if (!isMac) document.querySelectorAll(".find-key").forEach((k) => { k.textContent = "Ctrl K"; });
+});
+
+function findIn() {
+  try { return sessionStorage.getItem("find-in") || ""; } catch (e) { return ""; }
+}
+
+function openFinder() {
+  const dlg = finder();
+  if (!dlg) return;
+  const input = dlg.querySelector("#finder-q");
+  if (!dlg.open) {
+    findReturn = document.activeElement;
+    setFilter(findIn(), false);
+    dlg.showModal();
+    runSearch();
+  }
+  input.focus();
+  input.select();
+}
+
+function closeFinder() {
+  const dlg = finder();
+  if (!dlg?.open) return;
+  findAbort?.abort();
+  dlg.close();
+  if (findReturn?.isConnected) findReturn.focus();
+  findReturn = null;
+}
+
+function setFilter(value, search = true) {
+  finder().querySelectorAll(".finder-filters button").forEach((b) => {
+    b.setAttribute("aria-pressed", b.dataset.in === value ? "true" : "false");
+  });
+  try { sessionStorage.setItem("find-in", value); } catch (e) {}
+  if (search) runSearch();
+}
+
+function runSearch() {
+  const dlg = finder();
+  const q = dlg.querySelector("#finder-q").value;
+  const where = dlg.querySelector(".finder-filters [aria-pressed=true]")?.dataset.in || "";
+  findAbort?.abort();
+  findAbort = new AbortController();
+  clearTimeout(findTimer);
+  findDirty = false;
+  return fetch(`/search?q=${encodeURIComponent(q)}&in=${where}`, { signal: findAbort.signal })
+    .then((r) => (r.ok && !r.redirected ? r.text() : Promise.reject(r))) // redirected: signed out
+    .then((html) => showResults(html, q.trim(), where))
+    .catch((e) => { if (e.name !== "AbortError") showResults("", q.trim(), where, true); });
+}
+
+const placeName = { "": "your stack, shelf or dust", stack: "your stack", shelf: "your shelf", dust: "the dust" };
+
+function showResults(html, q, where, failed) {
+  const dlg = finder();
+  const list = dlg.querySelector("#finder-list");
+  list.innerHTML = html;
+  htmx.process(list); // so opening a piece is a boosted page change like any other link
+  const options = list.querySelectorAll("[role=option]");
+  const hits = list.querySelectorAll("[role=option]:not(.finder-site)").length;
+  const empty = dlg.querySelector("#finder-empty");
+  empty.hidden = options.length > 0;
+  dlg.querySelector("#finder-q").setAttribute("aria-expanded", options.length > 0);
+  empty.textContent = failed ? "Search isn't working right now." : q ? `Nothing in ${placeName[where]} matches “${q}”.` : `Nothing in ${placeName[where]} yet.`;
+  dlg.querySelector("#finder-heading").hidden = !!q || !hits;
+  dlg.querySelector("#finder-status").textContent = failed ? empty.textContent
+    : hits ? `${hits} ${hits === 1 ? "result" : "results"}${q ? "" : ", most recent first"}`
+    : options.length ? `${options.length} matching ${options.length === 1 ? "site" : "sites"}` : empty.textContent;
+  select(options[0]);
+}
+
+function select(option) {
+  const dlg = finder();
+  const input = dlg.querySelector("#finder-q");
+  dlg.querySelectorAll("[role=option][aria-selected=true]").forEach((o) => o.setAttribute("aria-selected", "false"));
+  if (!option) { input.removeAttribute("aria-activedescendant"); return; }
+  option.setAttribute("aria-selected", "true");
+  input.setAttribute("aria-activedescendant", option.id);
+  option.scrollIntoView({ block: "nearest" });
+}
+
+function choose(option) {
+  if (!option) return;
+  const input = finder().querySelector("#finder-q");
+  if (option.dataset.site) {
+    // Swap the half-typed "site:…" for the chosen site and keep searching.
+    input.value = input.value.replace(/\S*$/, `site:${option.dataset.site} `);
+    input.focus();
+    runSearch();
+    return;
+  }
+  const link = option.querySelector("a");
+  if (link.target !== "_blank") closeFinder();
+  link.click();
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "k" && (isMac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey) && !e.altKey && !e.shiftKey) {
+    if (!finder()) return;
+    e.preventDefault();
+    openFinder();
+  }
+});
+
+document.addEventListener("input", (e) => {
+  if (e.target.id !== "finder-q") return;
+  clearTimeout(findTimer);
+  findDirty = true;
+  findTimer = setTimeout(runSearch, 160);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.id !== "finder-q") return;
+  const options = [...finder().querySelectorAll("[role=option]")];
+  const at = options.findIndex((o) => o.getAttribute("aria-selected") === "true");
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    if (!options.length) return;
+    const next = e.key === "ArrowDown" ? (at + 1) % options.length : (at - 1 + options.length) % options.length;
+    select(options[next]);
+  } else if (e.key === "Escape") {
+    e.preventDefault(); // a search field would only clear itself on the first press
+    closeFinder();
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    if (findDirty) runSearch().then(() => choose(finder().querySelector("[role=option][aria-selected=true]")));
+    else choose(options[at]);
+  }
+});
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".find-open")) { openFinder(); return; }
+  const dlg = finder();
+  if (!dlg?.open) return;
+  if (e.target === dlg || e.target.closest(".finder-close")) { closeFinder(); return; } // the backdrop or Close
+  const chip = e.target.closest(".finder-filters button");
+  if (chip) { setFilter(chip.dataset.in); dlg.querySelector("#finder-q").focus(); return; }
+  const option = e.target.closest("[role=option]");
+  if (!option) return;
+  if (option.dataset.site) choose(option);
+  else if (option.querySelector("a").target !== "_blank") closeFinder();
+});
+
+// Esc with focus on a filter would close the dialog natively; go through closeFinder all the same.
+document.addEventListener("cancel", (e) => {
+  if (e.target.id === "finder") { e.preventDefault(); closeFinder(); }
+}, true);
