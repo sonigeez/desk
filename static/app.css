@@ -590,3 +590,5 @@ a.post-title:hover { text-decoration: underline; text-decoration-color: var(--li
 .day-stats div { display: flex; flex-direction: column-reverse; }
 .day-stats dt { font: var(--t-meta); color: var(--ink-3); }
 .day-stats dd { margin: 0; font: 700 1.35rem/1.15 var(--sans); letter-spacing: -0.02em; }
+.book-card .kind-switch { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; font-size: 0.9rem; }
+.book-card .kind-switch .link { font-weight: 600; text-decoration: underline; text-decoration-color: var(--gilt); text-underline-offset: 3px; min-height: 0; }

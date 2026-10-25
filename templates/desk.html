@@ -58,7 +58,7 @@
             <input id="note-{{$it.ID}}" name="note" type="text" value="{{$it.Note}}" placeholder="e.g. chapter 8">
             <button class="btn ghost">Save note</button>
           </form>
-          <form method="post" action="/items/{{$it.ID}}/article"><button class="link muted">It's one article, not a whole site</button></form>
+          <form class="kind-switch" method="post" action="/items/{{$it.ID}}/article"><span>Saved as a whole site.</span> <button class="link">It's one article, read it here</button></form>
           {{end}}
           <div class="actions">
             {{if or (eq $it.Kind "site") $failed}}<a class="btn read-link" href="{{$it.URL}}" target="_blank" rel="noopener">{{if eq $it.Kind "site"}}Open site{{else}}Open the original{{end}} {{template "i-out"}}</a>
