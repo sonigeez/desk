@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -17,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // ---- templates ----
@@ -135,7 +137,7 @@ func mins(m int) string {
 
 func loadPages() map[string]*template.Template {
 	pages := map[string]*template.Template{}
-	for _, name := range []string{"desk", "wire", "reader", "session", "done", "dust", "shelf", "follow", "source", "login", "save", "share", "offline"} {
+	for _, name := range []string{"desk", "wire", "reader", "session", "done", "dust", "shelf", "highlights", "follow", "source", "login", "save", "share", "offline"} {
 		pages[name] = template.Must(template.New("").Funcs(funcs).ParseFS(assets, "templates/layout.html", "templates/"+name+".html"))
 	}
 	return pages
@@ -295,9 +297,10 @@ type deskData struct {
 	Total       int
 	Pending     bool
 	Dust        []Item
-	Continue    *Item // the half-read piece opened most recently
-	Gone        *Item // just let go of, offered for undo
-	Done        *Item // just marked read, offered for undo
+	Continue    *Item                 // the half-read piece opened most recently
+	Gone        *Item                 // just let go of, offered for undo
+	Done        *Item                 // just marked read, offered for undo
+	Highlights  map[int64][]Highlight // by item, in reading order, for the covers
 	Error       string
 }
 
@@ -333,6 +336,11 @@ func (a *App) desk(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	d.Dust, _ = a.dust()
+	d.Highlights = map[int64][]Highlight{}
+	hs, _ := a.highlights(`WHERE i.status = 'stack' ORDER BY h.item_id, h.pos_start`)
+	for _, h := range hs {
+		d.Highlights[h.ItemID] = append(d.Highlights[h.ItemID], h)
+	}
 	a.render(w, "desk", "Desk", "desk", d)
 }
 
@@ -609,15 +617,16 @@ func (a *App) itemAction(w http.ResponseWriter, r *http.Request) {
 // ---- reading ----
 
 type readerData struct {
-	Item    Item
-	Content template.HTML
-	S       string // ids of the session this piece belongs to
-	Pos     int
-	Count   int
-	Next    *Item
-	Session []sessionPiece
-	Cols    template.CSS // one grid track per piece, sized by its minutes
-	Done    *Item        // the piece just finished, offered for undo
+	Item       Item
+	Content    template.HTML
+	S          string // ids of the session this piece belongs to
+	Pos        int
+	Count      int
+	Next       *Item
+	Session    []sessionPiece
+	Cols       template.CSS // one grid track per piece, sized by its minutes
+	Highlights []Highlight
+	Done       *Item // the piece just finished, offered for undo
 }
 
 type sessionPiece struct {
@@ -635,6 +644,13 @@ func (a *App) reader(w http.ResponseWriter, r *http.Request) {
 	var content string
 	a.db.QueryRow(`SELECT content_html FROM items WHERE id = ?`, it.ID).Scan(&content)
 	d := readerData{Item: it, Content: template.HTML(content)} // sanitized when it was saved
+	if d.Highlights, err = a.highlights(`WHERE h.item_id = ? ORDER BY h.pos_start`, it.ID); err != nil {
+		fail(w, err)
+		return
+	}
+	if d.Highlights == nil {
+		d.Highlights = []Highlight{}
+	}
 	// The service worker keeping a copy for offline isn't you opening it.
 	if r.Header.Get("X-Desk-Offline") == "" {
 		a.db.Exec(`UPDATE items SET opened_at = ? WHERE id = ?`, time.Now().Unix(), it.ID)
@@ -777,7 +793,74 @@ func (a *App) shelfPage(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	a.render(w, "shelf", "Shelf", "shelf", map[string]any{"Q": q, "Weeks": weeks, "Count": count, "Minutes": total, "Year": year})
+	found, err := a.searchHighlights(q)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	var marked int
+	a.db.QueryRow(`SELECT COUNT(*) FROM highlights`).Scan(&marked)
+	a.render(w, "shelf", "Shelf", "shelf", map[string]any{"Q": q, "Weeks": weeks, "Count": count, "Minutes": total, "Year": year,
+		"Found": found, "Marked": marked})
+}
+
+func (a *App) highlightsPage(w http.ResponseWriter, r *http.Request) {
+	hs, err := a.highlights(`ORDER BY h.created_at DESC, h.id DESC`)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	a.render(w, "highlights", "Highlights", "shelf", hs)
+}
+
+// ---- highlights ----
+
+// clip keeps user text to a sane size without cutting a character in half.
+func clip(s string, n int) string {
+	r := []rune(s)
+	return string(r[:min(len(r), n)])
+}
+
+func (a *App) addHighlightHandler(w http.ResponseWriter, r *http.Request) {
+	if utf8.RuneCountInString(r.FormValue("quote")) > 4000 {
+		http.Error(w, "That's too long to highlight.", http.StatusBadRequest)
+		return
+	}
+	h := Highlight{ItemID: pathID(r), Quote: r.FormValue("quote"), Prefix: clip(r.FormValue("prefix"), 64),
+		Suffix: clip(r.FormValue("suffix"), 64), Note: clip(strings.TrimSpace(r.FormValue("note")), 4000)}
+	h.Start, _ = strconv.Atoi(r.FormValue("start"))
+	h.End, _ = strconv.Atoi(r.FormValue("end"))
+	if strings.TrimSpace(h.Quote) == "" || h.Start < 0 || h.End <= h.Start {
+		http.Error(w, "Nothing was selected.", http.StatusBadRequest)
+		return
+	}
+	if _, err := a.item(h.ItemID); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	id, err := a.addHighlight(h)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]int64{"id": id})
+}
+
+func (a *App) highlightAction(w http.ResponseWriter, r *http.Request) {
+	id := pathID(r)
+	var err error
+	switch path.Base(r.URL.Path) {
+	case "note":
+		_, err = a.db.Exec(`UPDATE highlights SET note = ? WHERE id = ?`, clip(strings.TrimSpace(r.FormValue("note")), 4000), id)
+	case "delete":
+		_, err = a.db.Exec(`DELETE FROM highlights WHERE id = ?`, id)
+	}
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ---- following ----

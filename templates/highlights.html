@@ -1,0 +1,8 @@
+{{define "content"}}
+<header class="col-head wide"><h1 class="display">Highlights</h1><span class="meta"><a href="/shelf">Back to the Shelf</a></span></header>
+{{if .D}}
+<ol class="hl-cards">{{range .D}}{{template "hl-card" .}}{{end}}</ol>
+{{else}}
+<p class="note">Nothing marked yet. Select a passage while you read and choose Highlight.</p>
+{{end}}
+{{end}}

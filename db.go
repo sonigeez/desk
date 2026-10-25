@@ -68,6 +68,34 @@ CREATE TRIGGER IF NOT EXISTS items_au AFTER UPDATE OF title, content_text ON ite
   INSERT INTO items_fts(items_fts, rowid, title, content_text) VALUES ('delete', old.id, old.title, old.content_text);
   INSERT INTO items_fts(rowid, title, content_text) VALUES (new.id, new.title, new.content_text);
 END;
+
+-- A highlight is anchored by character offsets into the reader's text, with the quote and the text
+-- around it kept so it can be found again if the saved text changes.
+CREATE TABLE IF NOT EXISTS highlights (
+  id         INTEGER PRIMARY KEY,
+  item_id    INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+  quote      TEXT NOT NULL,
+  prefix     TEXT NOT NULL DEFAULT '',
+  suffix     TEXT NOT NULL DEFAULT '',
+  pos_start  INTEGER NOT NULL DEFAULT 0,
+  pos_end    INTEGER NOT NULL DEFAULT 0,
+  note       TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS highlights_item ON highlights(item_id);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS highlights_fts USING fts5(quote, note, content='highlights', content_rowid='id');
+
+CREATE TRIGGER IF NOT EXISTS highlights_ai AFTER INSERT ON highlights BEGIN
+  INSERT INTO highlights_fts(rowid, quote, note) VALUES (new.id, new.quote, new.note);
+END;
+CREATE TRIGGER IF NOT EXISTS highlights_ad AFTER DELETE ON highlights BEGIN
+  INSERT INTO highlights_fts(highlights_fts, rowid, quote, note) VALUES ('delete', old.id, old.quote, old.note);
+END;
+CREATE TRIGGER IF NOT EXISTS highlights_au AFTER UPDATE OF quote, note ON highlights BEGIN
+  INSERT INTO highlights_fts(highlights_fts, rowid, quote, note) VALUES ('delete', old.id, old.quote, old.note);
+  INSERT INTO highlights_fts(rowid, quote, note) VALUES (new.id, new.quote, new.note);
+END;
 `
 
 func openDB(path string) (*sql.DB, error) {

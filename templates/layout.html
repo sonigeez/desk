@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/htmx.min.js" defer></script>
 <script src="/static/app.js" defer></script>
+<script src="/static/highlights.js" defer></script>
 </head>
 <body hx-boost="true">
 {{if .Nav}}
@@ -83,3 +84,8 @@
 {{define "i-back"}}<svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}
 {{define "i-next"}}<svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}
 {{define "i-out"}}<svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5h6.5V10M12.5 3.5 4 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}
+{{define "hl-card"}}<li class="hl-card" style="--cloth: var(--{{cloth .URL}})">
+  <a href="/read/{{.ItemID}}#h{{.ID}}"><q>{{.Quote}}</q></a>
+  {{if .Note}}<p class="hl-card-note">{{.Note}}</p>{{end}}
+  <p class="meta">{{.Title}} · {{ago .CreatedAt}}</p>
+</li>{{end}}

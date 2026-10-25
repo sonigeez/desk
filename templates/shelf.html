@@ -1,5 +1,5 @@
 {{define "content"}}{{with .D}}
-<header class="col-head wide"><h1 class="display">Shelf</h1><span class="meta">{{.Count}} read · {{mins .Minutes}}</span></header>
+<header class="col-head wide"><h1 class="display">Shelf</h1><span class="meta">{{.Count}} read · {{mins .Minutes}}{{if .Marked}} · <a href="/shelf/highlights">{{.Marked}} {{if eq .Marked 1}}highlight{{else}}highlights{{end}}</a>{{end}}</span></header>
 <form class="search" method="get" action="/shelf">
   <label class="visually-hidden" for="q">Search what you've read</label>
   <input id="q" name="q" type="search" value="{{.Q}}" placeholder="Search everything you've read" autocomplete="off">
@@ -19,6 +19,12 @@
   </dl>
 </section>
 {{end}}
+{{if .Found}}
+<section class="hl-found" aria-labelledby="found-h">
+  <h2 id="found-h" class="meta">{{len .Found}} {{if eq (len .Found) 1}}highlight matches{{else}}highlights match{{end}}</h2>
+  <ol class="hl-cards">{{range .Found}}{{template "hl-card" .}}{{end}}</ol>
+</section>
+{{end}}
 {{if .Weeks}}
 {{range .Weeks}}
 <section class="shelf-week">
@@ -28,8 +34,9 @@
   </div>
 </section>
 {{end}}
-{{else if .Q}}
+{{else if and .Q (not .Found)}}
 <p class="note">Nothing you've read matches “{{.Q}}”.</p>
+{{else if .Q}}
 {{else}}
 <p class="note">Nothing here yet. Finished pieces stand on this shelf, grouped by week.</p>
 {{end}}
