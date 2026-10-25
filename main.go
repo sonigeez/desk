@@ -81,6 +81,7 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("GET /wire", a.wire)
 	mux.HandleFunc("POST /wire/collect", a.collect)
 	mux.HandleFunc("GET /surprise", a.surprise)
+	mux.HandleFunc("GET /search", a.searchResults)
 
 	mux.HandleFunc("GET /follow", a.followPage)
 	mux.HandleFunc("POST /follow/find", a.followFind)

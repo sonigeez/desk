@@ -418,13 +418,19 @@ func (a *App) saveKey() string {
 	return hex.EncodeToString(mac.Sum(nil))[:20]
 }
 
+var hostPattern = regexp.MustCompile(`^[A-Za-z0-9.\-:\[\]]+$`)
+
 // bookmarklet is a bookmark that opens /save on this Desk with the page you're on.
 func (a *App) bookmarklet(r *http.Request) template.URL {
 	scheme := "http"
 	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
 		scheme = "https"
 	}
-	save := scheme + "://" + r.Host + "/save?"
+	host := r.Host
+	if !hostPattern.MatchString(host) {
+		host = "localhost" // a forged Host header must not write script into the bookmark
+	}
+	save := scheme + "://" + host + "/save?"
 	if k := a.saveKey(); k != "" {
 		save += "k=" + k + "&"
 	}
@@ -457,7 +463,9 @@ func (a *App) savePage(w http.ResponseWriter, r *http.Request) {
 		a.render(w, "save", "Save from your browser", "save", d)
 		return
 	}
-	a.saveLink(w, r, d, hmac.Equal([]byte(q.Get("k")), []byte(a.saveKey())))
+	// With no password there's no key, so every save asks.
+	k := q.Get("k")
+	a.saveLink(w, r, d, k != "" && hmac.Equal([]byte(k), []byte(a.saveKey())))
 }
 
 // saveConfirmed is the yes to a save that asked first.
