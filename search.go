@@ -1,20 +1,22 @@
 package main
 
 import (
+	"context"
 	"html"
 	"html/template"
 	"log"
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 )
 
 // ---- search everything (Cmd/Ctrl+K) ----
 
-// Snippet markers: control characters that can't appear in saved text,
+// Snippet markers: private-use characters that saved text doesn't contain,
 // swapped for <mark> after the text has been escaped.
-const markOpen, markClose = "\x02", "\x03"
+const markOpen, markClose = "\ue000", "\ue001"
 
 // hitCols is itemCols for queries that join items (as i) to the search index.
 const hitCols = `i.id, i.url, i.kind, i.title, i.site, i.excerpt, i.minutes, i.note, i.status, i.fetch_state, i.scroll,
@@ -62,7 +64,7 @@ func marked(s string) template.HTML {
 
 // search looks through the stack, the shelf and dust (never what was let go of).
 // in is "", "stack", "shelf" or "dust". Title matches rank first, then the best text matches, then site-only matches.
-func (a *App) search(q, in string) (searchData, error) {
+func (a *App) search(ctx context.Context, q, in string) (searchData, error) {
 	words, site, typing := parseSearch(q)
 	var d searchData
 	cutoff := dustCutoff()
@@ -79,7 +81,7 @@ func (a *App) search(q, in string) (searchData, error) {
 		where = "i.status = 'read'"
 	}
 	if typing {
-		sites, err := a.siteSuggestions(where, args, site)
+		sites, err := a.siteSuggestions(ctx, where, args, site)
 		if err != nil {
 			return d, err
 		}
@@ -103,25 +105,24 @@ func (a *App) search(q, in string) (searchData, error) {
 		query = `SELECT ` + hitCols + `, i.title, '' FROM items i WHERE ` + where + `
 			ORDER BY MAX(i.saved_at, i.kept_at, COALESCE(i.read_at, 0), i.opened_at) DESC LIMIT 12`
 	} else {
-		// f has every row matching the words; t the ones whose title matches them.
-		query = `SELECT ` + hitCols + `, COALESCE(f.title_hl, i.title), COALESCE(f.snip, '')
-			FROM items i
-			LEFT JOIN (SELECT rowid, bm25(items_fts, 8.0, 1.0) AS rank,
-			                  highlight(items_fts, 0, '` + markOpen + `', '` + markClose + `') AS title_hl,
-			                  snippet(items_fts, 1, '` + markOpen + `', '` + markClose + `', '…', 18) AS snip
-			           FROM items_fts WHERE items_fts MATCH ?) f ON f.rowid = i.id
-			LEFT JOIN (SELECT rowid FROM items_fts WHERE items_fts MATCH ?) t ON t.rowid = i.id
+		// f has every row matching the words; t the ones whose title matches them. Both are
+		// materialized so the MATCH runs once rather than once per item.
+		query = `WITH f AS MATERIALIZED (SELECT rowid, bm25(items_fts, 8.0, 1.0) AS rank FROM items_fts WHERE items_fts MATCH ?),
+			     t AS MATERIALIZED (SELECT rowid FROM items_fts WHERE items_fts MATCH ?)
+			SELECT ` + hitCols + `, i.title, ''
+			FROM items i LEFT JOIN f ON f.rowid = i.id
 			WHERE ` + where + ` AND (f.rowid IS NOT NULL OR i.site LIKE ? ESCAPE '\' OR i.url LIKE ? ESCAPE '\')
-			ORDER BY t.rowid IS NULL, f.rowid IS NULL, f.rank, i.saved_at DESC LIMIT 30`
+			ORDER BY i.id NOT IN (SELECT rowid FROM t), f.rowid IS NULL, f.rank, i.saved_at DESC LIMIT 30`
 		args = append([]any{fq, "title : (" + fq + ")"}, args...)
 		like := "%" + likeEscape(words) + "%"
 		args = append(args, like, like)
 	}
-	rows, err := a.db.Query(query, args...)
+	rows, err := a.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return d, err
 	}
 	defer rows.Close()
+	var titles []string
 	for rows.Next() {
 		var h Hit
 		var title, snip string
@@ -138,25 +139,73 @@ func (a *App) search(q, in string) (searchData, error) {
 				h.Place = "Dust"
 			}
 		}
+		d.Hits = append(d.Hits, h)
+		titles = append(titles, title)
+	}
+	if err := rows.Err(); err != nil {
+		return d, err
+	}
+	rows.Close()
+	snips, err := a.snippets(ctx, fq, d.Hits)
+	if err != nil {
+		return d, err
+	}
+	for i := range d.Hits {
+		h := &d.Hits[i]
+		title, snip := titles[i], ""
+		if m, ok := snips[h.ID]; ok {
+			title, snip = m[0], m[1]
+		}
 		if title == "" {
-			title = it.URL // not fetched yet
+			title = h.URL // not fetched yet
 		}
 		h.TitleHL = marked(title)
 		if strings.Contains(snip, markOpen) {
 			h.Snippet = marked(snip)
-		} else if it.Excerpt != "" && it.Excerpt != it.Title {
-			h.Snippet = template.HTML(html.EscapeString(it.Excerpt))
+		} else if h.Excerpt != "" && h.Excerpt != h.Title {
+			h.Snippet = template.HTML(html.EscapeString(h.Excerpt))
 		}
-		d.Hits = append(d.Hits, h)
 	}
-	return d, rows.Err()
+	return d, nil
+}
+
+// snippets marks the matching words in the title and text of just the hits being shown.
+func (a *App) snippets(ctx context.Context, fq string, hits []Hit) (map[int64][2]string, error) {
+	out := map[int64][2]string{}
+	if fq == "" || len(hits) == 0 {
+		return out, nil
+	}
+	marks := make([]string, len(hits))
+	for i, h := range hits {
+		marks[i] = strconv.FormatInt(h.ID, 10)
+	}
+	args := []any{fq}
+	// One pass over the matches, marking only the hits shown. (MATCH with rowid IN re-runs the
+	// match for every id, which is slow for a short prefix like "a".)
+	rows, err := a.db.QueryContext(ctx, `SELECT * FROM (SELECT rowid AS id,
+		CASE WHEN rowid IN (`+strings.Join(marks, ",")+`) THEN highlight(items_fts, 0, '`+markOpen+`', '`+markClose+`') END AS title,
+		CASE WHEN rowid IN (`+strings.Join(marks, ",")+`) THEN snippet(items_fts, 1, '`+markOpen+`', '`+markClose+`', '…', 18) END AS snip
+		FROM items_fts WHERE items_fts MATCH ?) WHERE title IS NOT NULL`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		var m [2]string
+		if err := rows.Scan(&id, &m[0], &m[1]); err != nil {
+			return nil, err
+		}
+		out[id] = m
+	}
+	return out, rows.Err()
 }
 
 type SiteHint struct{ Host, Name string }
 
 // siteSuggestions lists the sites, most saved first, whose address or name starts with prefix.
-func (a *App) siteSuggestions(where string, args []any, prefix string) ([]SiteHint, error) {
-	rows, err := a.db.Query(`SELECT url, site FROM items i WHERE `+where, args...)
+func (a *App) siteSuggestions(ctx context.Context, where string, args []any, prefix string) ([]SiteHint, error) {
+	rows, err := a.db.QueryContext(ctx, `SELECT url, site FROM items i WHERE `+where, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +246,7 @@ func likeEscape(s string) string {
 }
 
 func (a *App) searchResults(w http.ResponseWriter, r *http.Request) {
-	d, err := a.search(r.URL.Query().Get("q"), r.URL.Query().Get("in"))
+	d, err := a.search(r.Context(), r.URL.Query().Get("q"), r.URL.Query().Get("in"))
 	if err != nil {
 		fail(w, err)
 		return

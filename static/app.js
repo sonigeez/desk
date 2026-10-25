@@ -184,7 +184,7 @@ function runSearch() {
   clearTimeout(findTimer);
   findDirty = false;
   return fetch(`/search?q=${encodeURIComponent(q)}&in=${where}`, { signal: findAbort.signal })
-    .then((r) => (r.ok ? r.text() : Promise.reject(r)))
+    .then((r) => (r.ok && !r.redirected ? r.text() : Promise.reject(r))) // redirected: signed out
     .then((html) => showResults(html, q.trim(), where))
     .catch((e) => { if (e.name !== "AbortError") showResults("", q.trim(), where, true); });
 }
