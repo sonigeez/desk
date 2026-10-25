@@ -38,8 +38,20 @@
   <div class="actions"><a class="btn ghost" href="/">Go to your desk</a></div>
   {{else}}
   <h1 class="display">Save from your browser</h1>
-  <p class="lede">Drag this to your bookmarks bar. Then, on any page you want to read later, click it and the page goes on your stack.</p>
-  <p><a class="bookmarklet" href="{{.Bookmarklet}}" title="Drag me to your bookmarks bar">{{template "i-desk"}}Save to Desk</a></p>
+  <p class="lede">Put a Save to Desk button in your browser's bookmarks bar. Then, on any page you want to read later, click it and the page goes on your stack.</p>
+  <div class="bm-demo">
+    <div class="bm-window" aria-hidden="true">
+      <div class="bm-chrome"><span class="bm-dots"><i></i><i></i><i></i></span><span class="bm-address">a-blog.com/a-post-worth-reading</span></div>
+      <div class="bm-bar"><span class="bm-fake"></span><span class="bm-fake short"></span><span class="bm-slot"><span class="bm-ghost">{{template "i-desk"}}Save to Desk</span></span><span class="bm-bar-label">bookmarks bar</span></div>
+      <div class="bm-page"><i></i><i></i><i class="short"></i></div>
+    </div>
+    <span class="bm-arrow" aria-hidden="true"></span>
+    <a class="bookmarklet" href="{{.Bookmarklet}}" title="Drag me to your bookmarks bar">{{template "i-desk"}}Save to Desk</a>
+  </div>
+  <ol class="bm-steps">
+    <li><b>Drag the Save to Desk button</b> up into your bookmarks bar. Hold it, move it, let go; don't click it.</li>
+    <li>On any page you want to keep, <b>click Save to Desk</b> in the bar.</li>
+  </ol>
   <p class="meta bookmarklet-hint" id="bookmarklet-hint" role="status"></p>
   <p class="meta">No bookmarks bar? Show it with <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>B</kbd> on a Mac, or <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>B</kbd> on Windows and Linux.</p>
   {{end}}

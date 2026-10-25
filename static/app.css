@@ -724,6 +724,55 @@ textarea {
 .bookmarklet:hover { border-color: var(--ink-3); }
 .bookmarklet:active { cursor: grabbing; }
 .bookmarklet-hint:empty { display: none; }
+/* A sketch of a browser: the dashed slot in its bookmarks bar sits right above the real button,
+   so the drag reads as straight up. --to is where the slot starts. */
+.bm-demo { --to: 114px; display: grid; justify-items: start; }
+.bm-window {
+  width: 100%; border: 1px solid var(--line-2); border-radius: 10px 10px 0 0; border-bottom: 0;
+  background: var(--surface); overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+.bm-chrome { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+.bm-dots { display: flex; gap: 5px; }
+.bm-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-2); }
+.bm-address {
+  flex: 1; min-width: 0; padding: 4px 10px; border-radius: 999px; background: var(--paper);
+  font: 500 0.78rem/1.2 var(--sans); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.bm-bar { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px; border-bottom: 1px solid var(--line); }
+.bm-fake { flex: none; width: 52px; height: 8px; border-radius: 4px; background: var(--line); }
+.bm-fake.short { width: 36px; }
+.bm-slot {
+  flex: none; display: grid; place-items: center; width: 138px; height: 28px; border-radius: 999px;
+  border: 1.5px dashed var(--ink-3);
+}
+.bm-ghost {
+  display: inline-flex; align-items: center; gap: 6px; font: 650 0.8rem/1 var(--sans); color: var(--ink);
+  opacity: 0; animation: bm-drop 4.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.bm-ghost .mark { width: 18px; height: 14px; }
+.bm-bar-label { margin-left: auto; font: 500 0.75rem/1 var(--sans); color: var(--ink-3); white-space: nowrap; }
+.bm-page { display: grid; gap: 8px; padding: 16px 14px 22px; }
+.bm-page i { height: 7px; border-radius: 4px; background: var(--line); }
+.bm-page i.short { width: 60%; }
+.bm-arrow {
+  position: relative; width: 2px; height: 34px; margin: 6px 0 6px calc(var(--to) + 68px);
+  background: repeating-linear-gradient(to top, var(--ink-3) 0 4px, transparent 4px 8px);
+}
+.bm-arrow::before {
+  content: ""; position: absolute; top: -6px; left: -5px;
+  border: 6px solid transparent; border-top: 0; border-bottom: 8px solid var(--ink-3);
+}
+.bm-demo .bookmarklet { margin-left: var(--to); }
+.bm-steps { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; }
+.bm-steps b { font-weight: 650; }
+@keyframes bm-drop {
+  0%, 25% { opacity: 0; transform: translateY(80px); }
+  50%, 92% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .bm-ghost { animation: none; opacity: 0.55; } }
+@media (max-width: 420px) { .bm-bar-label { display: none; } }
 .save-elsewhere { justify-self: start; text-decoration: none; }
 .save-elsewhere:hover { color: var(--ink); text-decoration: underline; }
 .saved.alone { margin: 8vh auto 0; }
