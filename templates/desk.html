@@ -51,6 +51,12 @@
         <div class="book-card">
           <p class="meta">{{$it.Site}} · saved {{ago $it.SavedAt}}{{if and (gt $it.Scroll 0.02) (not $failed)}} · {{pct $it.Scroll}}% read{{end}}{{if $it.SourceID}} · from a blog you follow{{end}}</p>
           {{if and $it.Excerpt (ne $it.Excerpt $it.Title)}}<p class="excerpt">{{$it.Excerpt}}</p>{{end}}
+          {{with index $.D.Highlights $it.ID}}
+          <div class="cover-hl">
+            <p class="meta">{{len .}} {{if eq (len .) 1}}highlight{{else}}highlights{{end}}</p>
+            {{range $j, $h := .}}{{if lt $j 2}}<a href="/read/{{$it.ID}}#h{{$h.ID}}"><q>{{$h.Quote}}</q></a>{{end}}{{end}}
+          </div>
+          {{end}}
           {{if $failed}}<div class="problem"><span>The page couldn't be fetched, so there's no saved text.</span><form method="post" action="/items/{{$it.ID}}/refetch"><button class="link">Try fetching again</button></form></div>{{end}}
           {{if eq $it.Kind "site"}}
           <form class="note-form" method="post" action="/items/{{$it.ID}}/note">
