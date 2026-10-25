@@ -41,7 +41,7 @@
   {{if .Stack}}
   <ol class="stack{{if .Budget}} planning{{end}}" id="stack" aria-label="The stack, {{len .Stack}} {{if eq (len .Stack) 1}}piece{{else}}pieces{{end}}{{if .Total}}, {{mins .Total}}{{end}}">
     {{range $i, $it := .Stack}}{{$picked := index $.D.Picked $it.ID}}{{$failed := eq $it.FetchState "failed"}}
-    <li class="book{{if $picked}} picked{{end}}{{if $failed}} failed{{end}}" style="{{bookStyle $it $i}}">
+    <li class="book{{if $picked}} picked{{end}}{{if $failed}} failed{{end}}" data-id="{{$it.ID}}" style="{{bookStyle $it $i}}">
       <details name="book" {{if and (eq $i 0) (not $.D.Budget)}}open{{end}}>
         <summary>
           <span class="spine-title">{{if eq $it.FetchState "pending"}}Fetching {{$it.Site}}…{{else}}{{$it.Title}}{{end}}</span>{{if $picked}}<span class="visually-hidden">: fits your time</span>{{end}}
@@ -77,6 +77,7 @@
     </li>
     {{end}}
   </ol>
+  <p class="meta offline-status" id="offline-status" hidden></p>
   {{else}}
   <p class="lede">Your stack is empty. Save a link with the button at the top, or add posts from the Wire.</p>
   {{end}}

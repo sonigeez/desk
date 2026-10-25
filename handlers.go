@@ -134,7 +134,7 @@ func mins(m int) string {
 
 func loadPages() map[string]*template.Template {
 	pages := map[string]*template.Template{}
-	for _, name := range []string{"desk", "wire", "reader", "session", "done", "dust", "shelf", "follow", "source", "login"} {
+	for _, name := range []string{"desk", "wire", "reader", "session", "done", "dust", "shelf", "follow", "source", "login", "offline"} {
 		pages[name] = template.Must(template.New("").Funcs(funcs).ParseFS(assets, "templates/layout.html", "templates/"+name+".html"))
 	}
 	return pages
@@ -463,7 +463,10 @@ func (a *App) reader(w http.ResponseWriter, r *http.Request) {
 	var content string
 	a.db.QueryRow(`SELECT content_html FROM items WHERE id = ?`, it.ID).Scan(&content)
 	d := readerData{Item: it, Content: template.HTML(content)} // sanitized when it was saved
-	a.db.Exec(`UPDATE items SET opened_at = ? WHERE id = ?`, time.Now().Unix(), it.ID)
+	// The service worker keeping a copy for offline isn't you opening it.
+	if r.Header.Get("X-Desk-Offline") == "" {
+		a.db.Exec(`UPDATE items SET opened_at = ? WHERE id = ?`, time.Now().Unix(), it.ID)
+	}
 	if s := r.URL.Query().Get("s"); s != "" {
 		ids := parseIDs(s)
 		var cols []string

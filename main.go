@@ -51,6 +51,7 @@ func main() {
 func (a *App) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(assets))
+	mux.HandleFunc("GET /static/sw.js", serviceWorker)
 	mux.HandleFunc("GET /login", a.loginPage)
 	mux.HandleFunc("POST /login", a.login)
 	mux.HandleFunc("POST /logout", a.logout)
@@ -76,6 +77,8 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("GET /wire", a.wire)
 	mux.HandleFunc("POST /wire/collect", a.collect)
 	mux.HandleFunc("GET /surprise", a.surprise)
+	mux.HandleFunc("GET /offline", a.offlinePage)
+	mux.HandleFunc("GET /offline.json", a.offlineList)
 
 	mux.HandleFunc("GET /follow", a.followPage)
 	mux.HandleFunc("POST /follow/find", a.followFind)

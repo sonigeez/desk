@@ -593,3 +593,20 @@ a.post-title:hover { text-decoration: underline; text-decoration-color: var(--li
 .book-card .kind-switch .link { font-weight: 600; text-decoration: underline; text-decoration-color: var(--gilt); text-underline-offset: 3px; min-height: 0; }
 .book-card .kind-switch.quiet { opacity: 0.8; font-size: 0.8125rem; }
 .book-card .kind-switch.quiet .link { font-weight: 500; }
+
+/* ---- offline ---- */
+/* a small gilt dot on the spine of a book that opens with no connection */
+.book.offline .spine-meta::after {
+  content: ""; display: inline-block; width: 5px; height: 5px; margin-left: 8px; vertical-align: 0.1em;
+  border-radius: 50%; background: var(--gilt);
+}
+.offline-status { margin: -6px 0 0; }
+.offline-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.offline-list a { display: grid; gap: 2px; padding: 12px 0; border-bottom: 1px solid var(--line); text-decoration: none; min-width: 0; }
+.offline-title { font-weight: 650; overflow-wrap: anywhere; }
+.offline-list a:hover .offline-title { text-decoration: underline; text-decoration-color: var(--line-2); }
+.offline-note {
+  position: fixed; z-index: 10; left: 16px; right: 16px; margin: 0 auto; max-width: 560px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  box-shadow: 0 10px 24px -12px var(--shadow);
+}

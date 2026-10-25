@@ -79,6 +79,18 @@ The simplest private way is [Tailscale](https://tailscale.com):
 2. On the phone, open `http://<computer-name>:8080`.
 3. On iPhone, Share → Add to Home Screen makes it feel like an app.
 
+### Read offline
+
+While Desk is reachable, your phone quietly keeps a copy of every piece on the stack (the top 50), so they still open when the computer sleeps or Tailscale is off. Books kept on the phone get a small gilt dot on the spine. Other pages show a list of what you can read, and reading positions are sent once Desk is back.
+
+This needs HTTPS: browsers only run the offline helper on `https://` or `localhost`, so the plain `http://<computer-name>:8080` address works online but keeps nothing. On the computer running Desk, run:
+
+```bash
+tailscale serve --bg 8080
+```
+
+and on the phone open the `https://<computer-name>.<tailnet>.ts.net` address it prints (the first time, it asks you to turn on HTTPS certificates for your tailnet). Signing out clears the copies.
+
 Keep the computer awake so new posts are found on time. On a Mac: System Settings → Battery → Options → "Prevent automatic sleeping when the display is off" (while plugged in).
 
 ## Keyboard

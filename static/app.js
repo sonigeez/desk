@@ -24,7 +24,8 @@ function saveScroll() {
   if (!s) return;
   const body = new FormData();
   body.append("f", s.f.toFixed(3));
-  navigator.sendBeacon(`/items/${s.article.dataset.id}/scroll`, body);
+  // A keepalive fetch, unlike a beacon, goes through the service worker, which holds on to it when offline.
+  fetch(`/items/${s.article.dataset.id}/scroll`, { method: "POST", body, keepalive: true }).catch(() => {});
 }
 
 window.addEventListener("scroll", () => {
@@ -124,4 +125,90 @@ document.addEventListener("toggle", (e) => {
 document.addEventListener("keydown", (e) => {
   const menu = document.querySelector(".save-menu[open]");
   if (e.key === "Escape" && menu) { menu.open = false; menu.querySelector("summary").focus(); }
+});
+
+// ---- offline: a service worker keeps the stack readable with no connection (see static/sw.js) ----
+
+// Service workers only run on HTTPS or localhost; elsewhere Desk just works online.
+const offline = window.isSecureContext && "serviceWorker" in navigator;
+if (offline) navigator.serviceWorker.register("/static/sw.js", { scope: "/" }).catch(() => {});
+
+function tellWorker(msg) {
+  if (offline) navigator.serviceWorker.ready.then((r) => r.active?.postMessage(msg)).catch(() => {});
+}
+
+async function offlineMeta() {
+  try {
+    const res = await caches.match("/__offline/meta");
+    return res ? await res.json() : null;
+  } catch (e) { return null; }
+}
+
+function sinceShort(ms) {
+  const m = Math.round((Date.now() - ms) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min ago`;
+  if (m < 48 * 60) return `${Math.round(m / 60)} h ago`;
+  return `${Math.round(m / 1440)} days ago`;
+}
+
+// Mark the books that open offline, and say when the copy was made.
+async function showOffline() {
+  const m = await offlineMeta();
+  const pieces = m ? m.pieces : [];
+  const kept = new Set(pieces.map((p) => String(p.id)));
+  document.querySelectorAll(".book[data-id]").forEach((b) => b.classList.toggle("offline", kept.has(b.dataset.id)));
+  const status = document.getElementById("offline-status");
+  const n = pieces.length;
+  if (status) {
+    status.hidden = !n;
+    status.textContent = n ? `${n} ${n === 1 ? "piece" : "pieces"} kept for reading offline, ${sinceShort(m.at)}` : "";
+  }
+  const list = document.getElementById("offline-list");
+  if (list) {
+    list.replaceChildren(...pieces.map((p) => {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = `/read/${p.id}`;
+      a.innerHTML = `<span class="offline-title"></span><span class="meta"></span>`;
+      a.firstChild.textContent = p.title;
+      a.lastChild.textContent = [p.site, p.minutes ? `${p.minutes} min` : ""].filter(Boolean).join(" · ");
+      li.append(a);
+      return li;
+    }));
+    document.getElementById("offline-none").hidden = n > 0;
+  }
+}
+
+if (offline) {
+  navigator.serviceWorker.addEventListener("message", (e) => { if (e.data === "offline-synced") showOffline(); });
+  htmx.onLoad((el) => {
+    if (el !== document.body && !el.matches?.("main") && !el.querySelector?.(".book")) return; // a whole page, or the stack redrawn
+    // Signed out (the sign-in page): nothing stays on this device.
+    if (document.querySelector('form[action="/login"]')) {
+      tellWorker("clear");
+      caches.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
+      return;
+    }
+    showOffline();
+    if (!document.getElementById("offline-page")) tellWorker("sync");
+  });
+}
+
+// Anything that needs Desk itself says so when Desk can't be reached, instead of doing nothing.
+document.addEventListener("htmx:sendError", (e) => {
+  const elt = e.detail.elt;
+  const what = (elt.matches?.("form") ? elt.querySelector("button")?.textContent : elt.textContent)?.trim();
+  let note = document.getElementById("offline-note");
+  if (!note) {
+    note = document.createElement("div");
+    note.id = "offline-note";
+    note.className = "notice offline-note";
+    note.setAttribute("role", "alert");
+    note.innerHTML = "<span></span>";
+    document.body.append(note);
+  }
+  note.firstChild.textContent = `${what ? `“${what}” didn't go through.` : "That didn't go through."} You're offline or Desk can't be reached, so try again once it's back.`;
+  clearTimeout(note.timer);
+  note.timer = setTimeout(() => note.remove(), 6000);
 });
