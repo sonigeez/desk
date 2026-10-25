@@ -454,6 +454,7 @@ type readerData struct {
 	Session    []sessionPiece
 	Cols       template.CSS // one grid track per piece, sized by its minutes
 	Highlights []Highlight
+	Done       *Item // the piece just finished, offered for undo
 }
 
 type sessionPiece struct {
@@ -479,6 +480,11 @@ func (a *App) reader(w http.ResponseWriter, r *http.Request) {
 		d.Highlights = []Highlight{}
 	}
 	a.db.Exec(`UPDATE items SET opened_at = ? WHERE id = ?`, time.Now().Unix(), it.ID)
+	if id, err := strconv.ParseInt(r.URL.Query().Get("done"), 10, 64); err == nil {
+		if done, err := a.item(id); err == nil {
+			d.Done = &done
+		}
+	}
 	if s := r.URL.Query().Get("s"); s != "" {
 		ids := parseIDs(s)
 		var cols []string
@@ -521,7 +527,25 @@ func (a *App) markRead(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/session/done?ids="+s, http.StatusSeeOther)
 		return
 	}
+	// Finishing a piece in the reader moves on to the next one on the stack.
+	if r.FormValue("from") == "reader" {
+		if next := a.nextToRead(); next != 0 {
+			http.Redirect(w, r, fmt.Sprintf("/read/%d?done=%d", next, id), http.StatusSeeOther)
+			return
+		}
+	}
 	http.Redirect(w, r, fmt.Sprintf("/?done=%d", id), http.StatusSeeOther)
+}
+
+// nextToRead is the top piece on the stack that can be read in the reader, or 0.
+func (a *App) nextToRead() int64 {
+	stack, _ := a.stack()
+	for _, it := range stack {
+		if it.Kind == "article" && it.FetchState == "ok" {
+			return it.ID
+		}
+	}
+	return 0
 }
 
 type sessionData struct {

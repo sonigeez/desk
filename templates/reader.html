@@ -24,6 +24,7 @@
   <button><span class="meta">Done · up next, {{mins .Next.Minutes}}</span><span class="up-next-title">{{.Next.Title}}</span></button>
 </form>
 {{end}}
+{{with .Done}}<div class="notice reader-notice" role="status"><span>“{{.Title}}” is on your shelf. Here's the next piece.</span><form method="post" action="/items/{{.ID}}/unread"><button class="link">Undo</button></form></div>{{end}}
 <article class="article" id="article" data-id="{{.Item.ID}}" data-scroll="{{.Item.Scroll}}" data-minutes="{{.Item.Minutes}}">
   <p class="byline">{{.Item.Site}}{{if .Item.Minutes}} · {{.Item.Minutes}} min read{{end}} · saved {{ago .Item.SavedAt}}</p>
   <h1>{{.Item.Title}}</h1>
@@ -62,6 +63,7 @@
     {{else}}
     <form method="post" action="/items/{{.Item.ID}}/read">
       <input type="hidden" name="s" value="{{.S}}">
+      <input type="hidden" name="from" value="reader">
       <button class="btn big">{{if .Next}}Mark read, next piece{{else}}Mark read{{end}}</button>
     </form>
     {{if not .S}}<a class="btn ghost big" href="/">Keep my place</a>{{end}}
