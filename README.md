@@ -71,6 +71,12 @@ go build -o desk . && launchctl kickstart -k gui/$(id -u)/local.desk
 
 On Linux, a systemd service running `./desk` from the project folder does the same job.
 
+## Save from your browser
+
+Open **+ Save → Save from any page with a bookmarklet** in Desk and drag **Save to Desk** to your bookmarks bar. On any page you want to read later, click it: the page goes on top of your stack and Desk shows it being fetched, with a link back to where you were. If you're signed out, Desk asks for your password and then finishes the save.
+
+The bookmarklet holds the address you opened Desk at, so add it from the same address you'll use it with. With `DESK_PASSWORD` set it also carries a key made from the password, so a link from another site can't add to your stack without asking you first. After changing the password, drag a fresh one.
+
 ## Use it from your phone
 
 The simplest private way is [Tailscale](https://tailscale.com):
@@ -118,6 +124,8 @@ Keep the computer awake so new posts are found on time. On a Mac: System Setting
 ## Keyboard
 
 On the desk: <kbd>J</kbd> <kbd>K</kbd> move through the stack, <kbd>R</kbd> reads, <kbd>/</kbd> saves a link, <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> pick 15, 30 or 60 minutes, <kbd>Esc</kbd> closes a book.
+
+Anywhere: <kbd>⌘</kbd> <kbd>K</kbd> (<kbd>Ctrl</kbd> <kbd>K</kbd> on Windows and Linux) searches everything on the stack, the shelf and in dust, by title, site or saved text. Type `site:jvns.ca` to stay on one site; <kbd>↑</kbd> <kbd>↓</kbd> choose and <kbd>Enter</kbd> opens. On a phone, tap Search at the top.
 
 ## Backups
 

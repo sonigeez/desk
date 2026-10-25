@@ -2,7 +2,7 @@
 // A highlight is stored as character offsets into the article's text plus the quote and a little text either
 // side, so it can be found again if the saved text ever changes. One that can't be found stays in the list.
 
-let prose = null, hls = [], pending = null, editing = null, barTimer = null;
+let prose = null, hls = [], pending = null, editing = null, barTimer = null, barPressed = false;
 
 function textNodes() {
   const walk = document.createTreeWalker(prose, NodeFilter.SHOW_TEXT);
@@ -150,6 +150,7 @@ function selectionInProse() {
 function showBar() {
   const bar = document.getElementById("hl-bar");
   if (!bar) return;
+  if (barPressed) return;
   pending = selectionInProse();
   if (!pending) { bar.hidden = true; return; }
   bar.hidden = false;
@@ -172,6 +173,7 @@ async function create(withNote) {
   const p = pending || selectionInProse();
   document.getElementById("hl-bar").hidden = true;
   pending = null;
+  barPressed = false;
   if (!p) return;
   const h = {
     quote: p.quote,
@@ -197,6 +199,7 @@ async function create(withNote) {
 // ---- editing ----
 
 function openEditor(h) {
+  if (!h) return;
   const dlg = document.getElementById("hl-dialog");
   editing = h;
   document.getElementById("hl-quote").textContent = h.quote;
@@ -256,8 +259,10 @@ document.addEventListener("click", (e) => {
   if (mark && !e.target.closest("a") && getSelection().isCollapsed) openEditor(byID(mark.dataset.hid));
 });
 
-// Keep the selection when a toolbar button is pressed with a mouse.
+// Keep the selection when a toolbar button is pressed with a mouse. A tap can still clear it on a
+// phone, so while the bar is pressed the selection it was shown for is kept.
 document.addEventListener("mousedown", (e) => { if (e.target.closest("#hl-bar")) e.preventDefault(); });
+document.addEventListener("pointerdown", (e) => { barPressed = !!e.target.closest("#hl-bar"); });
 
 document.addEventListener("keydown", (e) => {
   if (!prose || e.metaKey || e.ctrlKey || e.altKey || e.target.closest("input, textarea, select, dialog")) return;

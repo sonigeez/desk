@@ -1,0 +1,54 @@
+{{define "content"}}{{with .D}}
+<div class="saved{{if not $.Nav}} alone{{end}}" id="saved">
+  {{if not $.Nav}}<a class="wordmark" href="/">{{template "i-desk"}}<span>Desk</span></a>{{end}}
+
+  {{if .Item}}{{with .Item}}
+  <div class="saved-head">
+    <h1 class="display">{{if $.D.Again}}Already on your stack{{else}}Saved to your stack{{end}}</h1>
+    {{if $.D.Again}}<p class="lede">It's back on top.</p>{{end}}
+  </div>
+  <div class="book static" style="{{bookStyle . 0}}">
+    <div class="spine">
+      <span class="spine-title">{{if eq .FetchState "pending"}}Fetching {{.Site}}…{{else}}{{.Title}}{{end}}</span>
+      <span class="spine-meta">{{if eq .FetchState "failed"}}no text{{else if eq .Kind "site"}}site{{else if .Minutes}}{{.Minutes}} min{{end}}</span>
+    </div>
+  </div>
+  <p class="meta saved-url">{{.URL}}</p>
+  {{if eq .FetchState "failed"}}<p class="meta">The page couldn't be fetched, so there's no saved text. It's on your stack as a link to open.</p>{{end}}
+  <div class="actions">
+    <a class="btn" href="{{.URL}}" rel="noreferrer">{{template "i-back"}}Back to {{host .URL}}</a>
+    <a class="btn ghost" href="/">Go to your desk</a>
+  </div>
+  {{if eq .FetchState "pending"}}<div hx-get="{{$.D.Self}}" hx-trigger="load delay:1s" hx-select="#saved" hx-target="#saved" hx-swap="outerHTML"></div>{{end}}
+  {{end}}
+
+  {{else if .Ask}}
+  <h1 class="display">Save this page?</h1>
+  <p class="meta saved-url">{{.URL}}</p>
+  <form class="actions" method="post" action="/save">
+    <input type="hidden" name="url" value="{{.URL}}">
+    <button class="btn">Save to your stack</button>
+    <a class="btn ghost" href="{{.URL}}" rel="noreferrer">Don't save</a>
+  </form>
+  <p class="meta">Desk checks first when a save doesn't come from your bookmarklet. If it did, the bookmarklet is from before a password change: drag the new one from <a href="/save">Save from your browser</a>.</p>
+
+  {{else if .Error}}
+  <h1 class="display">Couldn't save that</h1>
+  <p class="error" role="alert">{{.Error}}</p>
+  <div class="actions"><a class="btn ghost" href="/">Go to your desk</a></div>
+  {{else}}
+  <h1 class="display">Save from your browser</h1>
+  <p class="lede">Drag this to your bookmarks bar. Then, on any page you want to read later, click it and the page goes on your stack.</p>
+  <p><a class="bookmarklet" href="{{.Bookmarklet}}" title="Drag me to your bookmarks bar">{{template "i-desk"}}Save to Desk</a></p>
+  <p class="meta bookmarklet-hint" id="bookmarklet-hint" role="status"></p>
+  <p class="meta">No bookmarks bar? Show it with <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>B</kbd> on a Mac, or <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>B</kbd> on Windows and Linux.</p>
+  {{end}}
+</div>
+{{end}}{{end}}
+
+{{define "i-desk"}}<svg class="mark" viewBox="0 0 28 22" aria-hidden="true">
+  <rect x="4" y="15" width="22" height="6" rx="1" fill="var(--c1)"/>
+  <rect x="1" y="8" width="23" height="6" rx="1" fill="var(--c2)"/>
+  <rect x="5" y="1" width="20" height="6" rx="1" fill="var(--c3)"/>
+  <path d="M7 16.5v3M9 16.5v3M4 9.5v3M6 9.5v3M8 2.5v3M10 2.5v3" stroke="var(--gilt)" stroke-width=".8"/>
+</svg>{{end}}
